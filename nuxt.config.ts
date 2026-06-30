@@ -14,8 +14,31 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/image',
     '@nuxt/fonts',
+    '@nuxt/scripts',
     'nuxt-i18n-micro',
+    'nuxt-umami',
   ],
+
+  // Privacy-friendly, self-hosted analytics (same stack as other side projects).
+  // Both are no-ops until their site ids are provided via env, so local/dev runs
+  // don't phone home.
+  umami: {
+    id: process.env.NUXT_UMAMI_SITE_ID || '',
+    host: 'https://umami.anorebel.net',
+    autoTrack: true,
+    proxy: 'cloak',
+  },
+
+  scripts: {
+    registry: {
+      rybbitAnalytics: {
+        scriptInput: {
+          src: 'https://rybbit.anorebel.net/api/script.js',
+        },
+        siteId: process.env.NUXT_RYBBIT_SITE_ID || '',
+      },
+    },
+  },
 
   // i18n: English + Swahili (sw). Albastini's East-African roots make sw a
   // natural fit (Dume/Jike/Mzungu surface in translations).
@@ -107,6 +130,13 @@ export default defineNuxtConfig({
       key: 'conduit', // required when authMode === 'key'
       relayMaxMessageBytes: 65536,
       allowedOrigins: '', // comma-separated; empty = allow all (dev)
+    },
+    // Analytics site ids (overridable via NUXT_RYBBIT_SITE_ID / NUXT_UMAMI_SITE_ID).
+    rybbit: {
+      siteId: process.env.NUXT_RYBBIT_SITE_ID || '',
+    },
+    umami: {
+      id: process.env.NUXT_UMAMI_SITE_ID || '',
     },
     public: {
       conduit: {
