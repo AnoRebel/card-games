@@ -29,14 +29,32 @@ export default defineNuxtConfig({
     proxy: 'cloak',
   },
 
+  // Rybbit via @nuxt/scripts registry. Only register when a site id is present
+  // (the registry schema requires a non-empty siteId, and an empty script would
+  // 404 against the self-hosted instance). The script src points at the
+  // self-hosted Rybbit (`/api/script.js`); autoTrackPageview + trackSpa make the
+  // registry track route changes in this SPA. Custom events: useScriptRybbitAnalytics().
   scripts: {
     registry: {
-      rybbitAnalytics: {
-        scriptInput: {
-          src: 'https://rybbit.anorebel.net/api/script.js',
-        },
-        siteId: process.env.NUXT_RYBBIT_SITE_ID || '',
-      },
+      // Tuple form: [options, scriptOptions]. `trigger: 'onNuxtReady'` defers the
+      // load until the app is hydrated (recommended for analytics — keeps it off
+      // the critical path). Note: the deprecated `true` shorthand applies this
+      // trigger automatically, but an explicit options object does NOT, so we set
+      // it here.
+      rybbitAnalytics: process.env.NUXT_RYBBIT_SITE_ID
+        ? [
+            {
+              siteId: process.env.NUXT_RYBBIT_SITE_ID,
+              analyticsHost: 'https://rybbit.anorebel.net',
+              scriptInput: {
+                src: 'https://rybbit.anorebel.net/api/script.js',
+              },
+              autoTrackPageview: true,
+              trackSpa: true,
+            },
+            { trigger: 'onNuxtReady' },
+          ]
+        : undefined,
     },
   },
 
