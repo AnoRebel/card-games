@@ -1,0 +1,276 @@
+import { describe, it, expect } from 'vitest'
+import { applyMove, type Player } from '@card-games/engine-core'
+import {
+  albastiniGame,
+  defaultAlbastiniConfig,
+  pointValue,
+  trickStrength,
+  type AlbastiniConfig,
+  type AlbastiniMove,
+  type AlbastiniState,
+} from '../src/index'
+
+const players4: Player[] = [
+  { id: 'a', name: 'A', seat: 0 },
+  { id: 'b', name: 'B', seat: 1 },
+  { id: 'c', name: 'C', seat: 2 },
+  { id: 'd', name: 'D', seat: 3 },
+]
+
+const init = (seed = 'al', cfg?: Partial<AlbastiniConfig>) =>
+  albastiniGame.createInitialState(
+    { ...defaultAlbastiniConfig(), ...cfg },
+    players4,
+    seed,
+  )
+
+describe('Albastini — deck & ranking', () => {
+  it('uses a 36-card deck with no 2/8/9/10', () => {
+    const s = init('x', { enableBidding: false })
+    const all = [
+      ...Object.values(s.hands).flat(),
+      ...s.stock,
+      ...(s.trumpCard ? [s.trumpCard] : []),
+    ]
+    expect(all).toHaveLength(36)
+    expect(all.some((c) => [2, 8, 9, 10].includes(c.rank))).toBe(false)
+  })
+
+  it('the 7 beats the King in trick strength', () => {
+    expect(trickStrength(7)).toBeGreaterThan(trickStrength(13))
+    expect(trickStrength(1)).toBeGreaterThan(trickStrength(7)) // Ace highest
+  })
+
+  it('point values total 120 across the deck', () => {
+    const s = init('x', { enableBidding: false })
+    const all = [
+      ...Object.values(s.hands).flat(),
+      ...s.stock,
+      ...(s.trumpCard ? [s.trumpCard] : []),
+    ]
+    const total = all.reduce((sum, c) => sum + pointValue(c.rank), 0)
+    expect(total).toBe(120)
+  })
+})
+
+describe('Albastini — deal & trump', () => {
+  it('deals 5 cards to each of 4 players', () => {
+    const s = init('x', { enableBidding: false })
+    for (const p of players4) expect(s.hands[p.seat]).toHaveLength(5)
+  })
+
+  it('without bidding, trump is set from the turned stock card', () => {
+    const s = init('seed-trump', { enableBidding: false })
+    expect(s.phase).toBe('playing')
+    expect(s.trump).not.toBeNull()
+  })
+})
+
+describe('Albastini — bidding (otea)', () => {
+  it('bid suits must be distinct', () => {
+    const s = init('bidseed')
+    expect(s.phase).toBe('bidding')
+    const seat = s.activeSeat!
+    const moves = albastiniGame.getLegalMoves(s, seat)
+    const bidMoves = moves.filter((m) => m.type === 'bid') as Extract<
+      AlbastiniMove,
+      { type: 'bid' }
+    >[]
+    if (bidMoves.length) {
+      const r = applyMove(albastiniGame, s, bidMoves[0]!)
+      expect(r.ok).toBe(true)
+      const next = (r as { state: AlbastiniState }).state
+      const bidSuit = bidMoves[0]!.card.suit
+      if (next.phase === 'bidding' && next.activeSeat !== null) {
+        const nextMoves = albastiniGame.getLegalMoves(next, next.activeSeat)
+        const sameSuit = nextMoves
+          .filter((m) => m.type === 'bid')
+          .some((m) => (m as { card: { suit: string } }).card.suit === bidSuit)
+        expect(sameSuit).toBe(false)
+      }
+    }
+  })
+
+  it('the dealer cannot bid', () => {
+    const s = init('bidseed')
+    // dealer is seat 0; force activeSeat to dealer and check legal moves.
+    const forced: AlbastiniState = { ...s, activeSeat: 0 }
+    const moves = albastiniGame.getLegalMoves(forced, 0)
+    expect(moves.every((m) => m.type !== 'bid')).toBe(true)
+  })
+})
+
+describe('Albastini — trick play', () => {
+  it('no follow-suit: any card is legal during play', () => {
+    const s = init('p', { enableBidding: false })
+    const seat = s.activeSeat!
+    const moves = albastiniGame.getLegalMoves(s, seat)
+    expect(moves).toHaveLength(s.hands[seat]!.length)
+    expect(moves.every((m) => m.type === 'play')).toBe(true)
+  })
+
+  it('highest trump wins; with none, highest of led suit wins', () => {
+    // Construct a controlled 2-player trick.
+    const players2: Player[] = [
+      { id: 'a', name: 'A', seat: 0 },
+      { id: 'b', name: 'B', seat: 1 },
+    ]
+    let s = albastiniGame.createInitialState(
+      { ...defaultAlbastiniConfig(), enableBidding: false },
+      players2,
+      'trickseed',
+    )
+    s = {
+      ...s,
+      phase: 'playing',
+      trump: 'c',
+      trumpCard: null,
+      stock: [],
+      ledSuit: null,
+      currentTrick: [],
+      activeSeat: 0,
+      hands: {
+        0: [{ rank: 13, suit: 'h' }], // King of hearts (leads hearts)
+        1: [{ rank: 3, suit: 'c' }], // low club = trump
+      },
+    } as AlbastiniState
+    const r1 = applyMove(albastiniGame, s, {
+      type: 'play',
+      seat: 0,
+      card: { rank: 13, suit: 'h' },
+    } as AlbastiniMove)
+    s = (r1 as { state: AlbastiniState }).state
+    const r2 = applyMove(albastiniGame, s, {
+      type: 'play',
+      seat: 1,
+      card: { rank: 3, suit: 'c' },
+    } as AlbastiniMove)
+    s = (r2 as { state: AlbastiniState }).state
+    // Seat 1's trump beats the King; seat 1 ate both cards.
+    expect(s.taken[1]).toHaveLength(2)
+    expect(s.taken[0]).toHaveLength(0)
+  })
+
+  it('seven beats king within the led suit when no trump played', () => {
+    const players2: Player[] = [
+      { id: 'a', name: 'A', seat: 0 },
+      { id: 'b', name: 'B', seat: 1 },
+    ]
+    let s = albastiniGame.createInitialState(
+      { ...defaultAlbastiniConfig(), enableBidding: false },
+      players2,
+      'sevenseed',
+    )
+    s = {
+      ...s,
+      phase: 'playing',
+      trump: 'c',
+      trumpCard: null,
+      stock: [],
+      ledSuit: null,
+      currentTrick: [],
+      activeSeat: 0,
+      hands: {
+        0: [{ rank: 13, suit: 'h' }], // King hearts (led)
+        1: [{ rank: 7, suit: 'h' }], // Seven hearts (same suit, beats King)
+      },
+    } as AlbastiniState
+    let r = applyMove(albastiniGame, s, {
+      type: 'play',
+      seat: 0,
+      card: { rank: 13, suit: 'h' },
+    } as AlbastiniMove)
+    s = (r as { state: AlbastiniState }).state
+    r = applyMove(albastiniGame, s, {
+      type: 'play',
+      seat: 1,
+      card: { rank: 7, suit: 'h' },
+    } as AlbastiniMove)
+    s = (r as { state: AlbastiniState }).state
+    expect(s.taken[1]).toHaveLength(2)
+  })
+})
+
+describe('Albastini — scoring & victory points', () => {
+  it('individual: top scorer gets 2 VP if someone ate < 10', () => {
+    const players2: Player[] = [
+      { id: 'a', name: 'A', seat: 0 },
+      { id: 'b', name: 'B', seat: 1 },
+    ]
+    let s = albastiniGame.createInitialState(
+      { ...defaultAlbastiniConfig(), enableBidding: false, hands: 1 },
+      players2,
+      'scoreseed',
+    )
+    // Final trick of the hand: seat 0 takes the Ace (11), seat 1 has nothing.
+    s = {
+      ...s,
+      phase: 'playing',
+      trump: 'c',
+      trumpCard: null,
+      stock: [],
+      ledSuit: null,
+      currentTrick: [],
+      activeSeat: 0,
+      taken: { 0: [], 1: [] },
+      hands: {
+        0: [{ rank: 1, suit: 'c' }], // Ace trump
+        1: [{ rank: 3, suit: 'h' }],
+      },
+    } as AlbastiniState
+    let r = applyMove(albastiniGame, s, {
+      type: 'play',
+      seat: 0,
+      card: { rank: 1, suit: 'c' },
+    } as AlbastiniMove)
+    s = (r as { state: AlbastiniState }).state
+    r = applyMove(albastiniGame, s, {
+      type: 'play',
+      seat: 1,
+      card: { rank: 3, suit: 'h' },
+    } as AlbastiniMove)
+    s = (r as { state: AlbastiniState }).state
+    expect(s.phase).toBe('finished')
+    const scores = albastiniGame.getScores(s)
+    // Seat 0 ate 11, seat 1 ate 0 (<10) → 2 VP to seat 0.
+    expect(scores.victoryBySeat![0]).toBe(2)
+    expect(scores.winners).toEqual([0])
+  })
+
+  it('a tie awards no victory points', () => {
+    const s = init('tie', { enableBidding: false })
+    // Fabricate a finished, tied hand.
+    const finished: AlbastiniState = {
+      ...s,
+      phase: 'finished',
+      activeSeat: null,
+      victoryPoints: { 0: 0, 1: 0, 2: 0, 3: 0 },
+    }
+    const scores = albastiniGame.getScores(finished)
+    expect(scores.winners).toEqual([])
+  })
+})
+
+describe('Albastini — engine guarantees', () => {
+  it('same seed deals identically; redactFor hides others', () => {
+    const a = init('same', { enableBidding: false })
+    const b = init('same', { enableBidding: false })
+    expect(a).toEqual(b)
+    const view = albastiniGame.redactFor(a, 0)
+    expect(view.hands[0]!.length).toBe(5)
+    // Opponent hand count preserved (backs + animations); identities hidden.
+    expect(view.hands[1]!.length).toBe(5)
+    expect(view.hands[1]).not.toEqual(a.hands[1])
+  })
+
+  it('rejects out-of-turn play', () => {
+    const s = init('oot', { enableBidding: false })
+    const notActive = (s.activeSeat! + 1) % 4
+    const move = {
+      type: 'play',
+      seat: notActive,
+      card: s.hands[notActive]![0]!,
+    } as AlbastiniMove
+    expect(applyMove(albastiniGame, s, move).ok).toBe(false)
+  })
+})

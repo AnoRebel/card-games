@@ -1,0 +1,24 @@
+/*
+ * Literal font-family declarations.
+ *
+ * @nuxt/fonts scans source for `font-family` usages and generates the matching
+ * @font-face (with fallback metrics) from the self-hosted files in
+ * /public/fonts (local provider; see nuxt.config.ts). Declaring each family
+ * literally here guarantees detection — the Tailwind @theme tokens in main.css
+ * then expose `font-display` / `font-last-card` / `font-albastini` utilities.
+ *
+ *   Inter                → UI / body        Bricolage Grotesque → brand/display
+ *   Outfit               → Last Card accent  Fraunces            → Albastini accent
+ */
+.ff-sans {
+  font-family: 'Inter', sans-serif;
+}
+.ff-display {
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+.ff-last-card {
+  font-family: 'Outfit', sans-serif;
+}
+.ff-albastini {
+  font-family: 'Fraunces', serif;
+}

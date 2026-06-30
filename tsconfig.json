@@ -1,0 +1,11 @@
+{
+  // Root references the Nuxt-generated configs and the workspace packages.
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@card-games/engine-core": ["./packages/engine-core/src/index.ts"],
+      "@card-games/game-last-card": ["./packages/game-last-card/src/index.ts"],
+      "@card-games/game-albastini": ["./packages/game-albastini/src/index.ts"]
+    }
+  }
+}

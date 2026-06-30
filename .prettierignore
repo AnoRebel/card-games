@@ -1,0 +1,17 @@
+# Generated / vendored
+.nuxt
+.output
+.data
+dist
+node_modules
+coverage
+
+# Lockfiles & assets
+bun.lock
+bun.lockb
+*.woff2
+*.svg
+
+# Planning docs keep their own formatting
+openspec
+dev_materials
