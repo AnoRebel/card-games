@@ -93,10 +93,15 @@ function setOppEl(seat: number, node: Element | null) {
   if (node) oppEls.set(seat, node as HTMLElement)
   else oppEls.delete(seat)
 }
-/** Anchor for a seat: opponents use their pill; the viewer uses their hand's
- *  root DOM element (NOT the exposed component object — that has no rect). */
-function seatAnchor(seat: number): HTMLElement | null {
-  if (seat === viewerSeat.value) return handRef.value?.rootEl() ?? null
+/**
+ * Anchor for a seat: opponents use their pill; the viewer uses their hand's
+ * root DOM element (NOT the exposed component object — that has no rect). The
+ * viewer seat is passed in explicitly: in offline HOTSEAT it flips every turn,
+ * so callers snapshot `viewerSeat.value` synchronously (before any nextTick)
+ * and pass it here — otherwise the flight would target the wrong seat.
+ */
+function seatAnchor(seat: number, viewer: number | null): HTMLElement | null {
+  if (seat === viewer) return handRef.value?.rootEl() ?? null
   return oppEls.get(seat) ?? null
 }
 
@@ -108,6 +113,9 @@ let flownByLocal: string | null = null
 watch(topDiscard, (top, prev) => {
   if (!top || (prev && cardId(top) === cardId(prev))) return
   const id = cardId(top)
+  // Snapshot NOW — viewerSeat may flip (hotseat) before nextTick runs.
+  const viewer = viewerSeat.value
+  const player = lastPlayerSeat.value
   nextTick(() => {
     if (!discardRef.value) return
     // Local player's card was already flown from the hand → just pop it.
@@ -117,7 +125,7 @@ watch(topDiscard, (top, prev) => {
       return
     }
     // Otherwise fly it from the seat that just played (opponent / bot).
-    const from = lastPlayerSeat.value != null ? seatAnchor(lastPlayerSeat.value) : null
+    const from = player != null ? seatAnchor(player, viewer) : null
     if (from) flyCard(from, discardRef.value).then(() => playCard(discardRef.value!))
     else playCard(discardRef.value)
   })
@@ -130,12 +138,14 @@ const prevHands: Record<number, number> = {}
 // Skip animating the very first state (initial deal) — only refills mid-game.
 let primedHands = false
 
-// Shuffle the draw pile when a fresh deal happens (round start: draw pile jumps
-// up after having been depleted/empty, or the first deal of the match).
+// Shuffle the draw pile on a mid-game reshuffle (discard recycled → draw pile
+// jumps up). `primedDraw` skips the initial deal so we don't wiggle on mount.
+let primedDraw = false
 watch(
   () => lc.value.drawPile?.length ?? 0,
   (n, prev) => {
-    if (n > (prev ?? 0) + 1 && drawRef.value) shuffle(drawRef.value)
+    if (primedDraw && n > (prev ?? 0) + 1 && drawRef.value) shuffle(drawRef.value)
+    primedDraw = true
   },
 )
 watch(() => lc.value.activeSuit, () => {
@@ -163,11 +173,13 @@ props.transport.onChange((v) => {
   const next = v.state as LastCardState | null
   if (next) {
     lastPlayerSeat.value = prevActive
+    // Snapshot the viewer seat synchronously (hotseat flips it before nextTick).
+    const viewer = viewerSeat.value
     // Draw detection: any seat whose hand grew → fly card(s) from the draw pile.
     for (const p of players.value) {
       const before = prevHands[p.seat] ?? 0
       const after = next.hands?.[p.seat]?.length ?? 0
-      if (primedHands && after > before) animateDraw(p.seat, after - before)
+      if (primedHands && after > before) animateDraw(p.seat, after - before, viewer)
       prevHands[p.seat] = after
     }
     prevActive = next.activeSeat ?? null
@@ -176,9 +188,9 @@ props.transport.onChange((v) => {
   log.push(v.state)
 })
 
-function animateDraw(seat: number, count: number) {
+function animateDraw(seat: number, count: number, viewer: number | null) {
   nextTick(() => {
-    const to = seatAnchor(seat)
+    const to = seatAnchor(seat, viewer)
     const from = drawCardRef.value ?? drawRef.value
     if (from && to) {
       // A drawn card stays roughly card-sized at the hand (don't scale to the
@@ -200,8 +212,6 @@ const suits: { id: Suit; label: string }[] = [
 ]
 
 async function flyToDiscard(...cards: Card[]) {
-  // Mark these cards as locally flown so the diff-driven watcher doesn't re-fly.
-  flownByLocal = cardId(cards[cards.length - 1]!)
   for (const c of cards) {
     const src = handRef.value?.cardEl(cardId(c))
     if (src && discardRef.value) await flyCard(src, discardRef.value)
@@ -238,8 +248,16 @@ async function commitPlay(move: LastCardMove) {
   if (move.type !== 'play') return
   pendingMulti.value = null
   choosingTop.value = false
-  await flyToDiscard(...playedCards(move))
-  await session.play(move)
+  const cards = playedCards(move)
+  await flyToDiscard(...cards)
+  // Mark as locally-flown BEFORE submitting so the state-diff watcher (which may
+  // run synchronously for local play) suppresses the duplicate fly. If the play
+  // is REJECTED, clear it so a stale id can't mis-suppress a later opponent fly.
+  flownByLocal = cardId(cards[cards.length - 1]!)
+  const res = await session.play(move)
+  if (!res.ok && flownByLocal === cardId(cards[cards.length - 1]!)) {
+    flownByLocal = null
+  }
 }
 
 async function playCardMove(card: Card) {

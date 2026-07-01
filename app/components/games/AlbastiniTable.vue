@@ -105,12 +105,14 @@ props.transport.onChange((v) => {
     }
   }
   if (next?.hands) {
+    // Snapshot the viewer seat (hotseat flips it per turn).
+    const viewer = viewerSeat.value
     for (const p of players.value) {
       const after = next.hands?.[p.seat]?.length ?? 0
-      const before = prevHand[p.seat] ?? after
+      const before = prevHand[p.seat] ?? 0
       // Skip the very first state (initial deal) — only animate refills mid-game.
       if (primedHands && after > before && stockRef.value) {
-        const toViewer = p.seat === viewerSeat.value
+        const toViewer = p.seat === viewer
         const to = toViewer ? (handRef.value?.rootEl() ?? null) : oppEls.get(p.seat) ?? null
         if (to) {
           const reps = after - before
@@ -128,12 +130,16 @@ props.transport.onChange((v) => {
   log.push(v.state)
 })
 
-// Shuffle flourish on the table when a fresh hand is dealt (my hand jumps up
-// from empty/low at the start of a round).
+// Shuffle flourish on a fresh deal. Keyed off the STOCK size jumping up (a
+// stable, viewer-independent signal) rather than `myHand.length`, which swaps
+// identity in offline hotseat when the viewer seat flips. Primed guard skips
+// the initial deal so we don't wiggle on mount.
+let primedStock = false
 watch(
-  () => myHand.value.length,
+  () => ab.value.stock?.length ?? 0,
   (n, prev) => {
-    if (n > (prev ?? 0) + 1 && tableRef.value) shuffle(tableRef.value)
+    if (primedStock && n > (prev ?? 0) + 1 && tableRef.value) shuffle(tableRef.value)
+    primedStock = true
   },
 )
 
@@ -207,10 +213,13 @@ async function onPlay(card: Card) {
     (m) => (m.type === 'play' || m.type === 'bid') && cardId(m.card) === cardId(card),
   )
   if (!move) return
-  flownByLocal = cardId(card)
   const src = handRef.value?.cardEl(cardId(card))
   if (src && trickRef.value) await flyCard(src, trickRef.value)
-  await session.play(move)
+  // Mark flown before submit (local play may diff synchronously); clear on a
+  // rejected move so a stale id can't mis-suppress a later opponent's fly.
+  flownByLocal = cardId(card)
+  const res = await session.play(move)
+  if (!res.ok && flownByLocal === cardId(card)) flownByLocal = null
 }
 async function passBid() {
   const move = legalMoves.value.find((m) => m.type === 'pass-bid')
