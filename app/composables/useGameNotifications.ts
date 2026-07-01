@@ -149,11 +149,15 @@ export function useGameNotifications(
       }
       prevAwaiting = s.awaitingCall
 
-      // YOU are on your last card (only the viewer's hand is visible). Fire once
-      // per descent to one — covers single, and the moment after a pair leaves
-      // you with one. Cleared when you're no longer at one.
-      const myCount = view.viewerSeat != null ? (s.hands?.[view.viewerSeat]?.length ?? -1) : -1
-      const onLast = myCount === 1
+      // YOU are on your last card(s): the viewer's own hand is a single card OR
+      // one same-rank group (a pair/triplet you can dump together to win). Fires
+      // once per descent into that state.
+      const myHand =
+        view.viewerSeat != null
+          ? ((s.hands?.[view.viewerSeat] ?? []) as { rank: number }[])
+          : []
+      const onLast =
+        myHand.length >= 1 && myHand.every((c) => c.rank === myHand[0]!.rank)
       if (onLast && !prevOnLast) {
         notify($t('game.youOnLastCard'), 'i-lucide-flame', { accent: true, duration: 5000 })
       }

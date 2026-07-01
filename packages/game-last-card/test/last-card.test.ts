@@ -144,6 +144,79 @@ describe('Last Card — action cards', () => {
 })
 
 describe('Last Card — last card call & penalty', () => {
+  it('a remaining same-rank PAIR counts as "last card(s)" and can be declared', () => {
+    let s = init()
+    s = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      // After playing 4h, seat 0 is left with a PAIR of 9s (one group → last cards).
+      hands: {
+        0: [{ rank: 4, suit: 'h' }, { rank: 9, suit: 'c' }, { rank: 9, suit: 's' }],
+        1: [{ rank: 8, suit: 'c' }],
+        2: [{ rank: 8, suit: 'd' }],
+      },
+    }
+    // Play 4h plain (no declare) → left with the 9-pair → awaitingCall set.
+    const r1 = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: { rank: 4, suit: 'h' } } as LastCardMove)
+    s = (r1 as { state: LastCardState }).state
+    expect(handCount(s, 0)).toBe(2)
+    expect(s.awaitingCall).toBe(0)
+
+    // Seat 0 may declare OUT OF TURN with a pair remaining.
+    expect(lastCardGame.getLegalMoves(s, 0)).toEqual([{ type: 'declare-last-card', seat: 0 }])
+    const r2 = applyMove(lastCardGame, s, { type: 'declare-last-card', seat: 0 } as LastCardMove)
+    expect(r2.ok).toBe(true)
+    s = (r2 as { state: LastCardState }).state
+    expect(s.declaredLastCard).toBe(0)
+    expect(s.awaitingCall).toBeNull()
+  })
+
+  it('offers declare-with-play when a play leaves a same-rank pair', () => {
+    const s = init()
+    const test: LastCardState = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      hands: {
+        0: [{ rank: 4, suit: 'h' }, { rank: 9, suit: 'c' }, { rank: 9, suit: 's' }],
+        1: [{ rank: 8, suit: 'c' }],
+        2: [{ rank: 8, suit: 'd' }],
+      },
+    }
+    const moves = lastCardGame.getLegalMoves(test, 0)
+    // Playing 4h leaves the 9-pair → a declare variant of that play is offered.
+    const declareVariant = moves.find(
+      (m) =>
+        m.type === 'play' &&
+        m.card.rank === 4 &&
+        m.card.suit === 'h' &&
+        m.declareLastCard,
+    )
+    expect(declareVariant).toBeTruthy()
+  })
+
+  it('a two-card hand of DIFFERENT ranks is NOT a last-card state', () => {
+    const s = init()
+    const test: LastCardState = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      hands: {
+        0: [{ rank: 4, suit: 'h' }, { rank: 9, suit: 'c' }, { rank: 2, suit: 's' }],
+        1: [{ rank: 8, suit: 'c' }],
+        2: [{ rank: 8, suit: 'd' }],
+      },
+    }
+    // Playing 4h leaves 9c + 2s (mixed ranks) → NOT last cards, no declare offered.
+    const r = applyMove(lastCardGame, test, { type: 'play', seat: 0, card: { rank: 4, suit: 'h' } } as LastCardMove)
+    const after = (r as { state: LastCardState }).state
+    expect(after.awaitingCall).toBeNull()
+  })
+
   it('missing the declaration applies the penalty when the next player acts', () => {
     let s = init()
     s = {

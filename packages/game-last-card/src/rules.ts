@@ -26,6 +26,19 @@ const isReverse = (c: Card, cfg: LastCardConfig) =>
 const isSuitChange = (c: Card, cfg: LastCardConfig) =>
   cfg.suitChangeCards.includes(c.rank)
 
+/**
+ * Is `hand` a "last card(s)" state — i.e. it can be emptied in ONE more play,
+ * so the player must call? That's a single card, or (when multi same-rank plays
+ * are allowed) two-or-more cards that are ALL the same rank (a pair/triplet the
+ * player will dump together next turn).
+ */
+function isLastGroup(hand: readonly Card[], cfg: LastCardConfig): boolean {
+  if (hand.length === 1) return true
+  if (!cfg.allowMultiSameRank || hand.length < 2) return false
+  const rank = hand[0]!.rank
+  return hand.every((c) => c.rank === rank)
+}
+
 /** Top discard card (the pile is never empty during play). */
 function topDiscard(state: LastCardState): Card {
   const top = state.discardPile[state.discardPile.length - 1]
@@ -156,17 +169,16 @@ const playerCount = (state: LastCardState) => state.players.length
 export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] {
   if (state.phase === 'finished') return []
 
-  // A seat that reduced to one card but hasn't declared may call "Last Card"
-  // OUT OF TURN — before the next player acts and closes the window. Without
-  // this, declaring is only possible atomically with the play, so a plain play
+  // A seat that reduced to its last card(s) (a single card, or one same-rank
+  // group) but hasn't declared may call "Last Card" OUT OF TURN — before the
+  // next player acts and closes the window. `awaitingCall` is only set by the
+  // reducer for a genuine last-group, so gating on it is sufficient. Without
+  // this, declaring is only possible atomically with the play → a plain play
   // guaranteed the missed-call penalty.
-  const canDeclareNow =
-    state.config.requireLastCardCall &&
-    state.awaitingCall === seat &&
-    (state.hands[seat]?.length ?? 0) === 1
-  const declareMoves: LastCardMove[] = canDeclareNow
-    ? [{ type: 'declare-last-card', seat }]
-    : []
+  const declareMoves: LastCardMove[] =
+    state.config.requireLastCardCall && state.awaitingCall === seat
+      ? [{ type: 'declare-last-card', seat }]
+      : []
 
   // Off-turn: the only thing you may do is call your last card.
   if (state.activeSeat !== seat) return declareMoves
@@ -194,18 +206,23 @@ export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] 
 
   /** Push play move(s) for a lead card, optionally bundling extra same-rank cards. */
   const pushPlay = (card: Card, extraCards: Card[]) => {
-    // Reaching exactly one card after this play opens the Last Card declaration.
-    const willReachOne =
-      state.config.requireLastCardCall && hand.length - (1 + extraCards.length) === 1
+    // Does this play leave a "last card(s)" hand (a single card, or one same-rank
+    // group)? If so, offer declaring alongside the play.
+    const playedIds = new Set([cardId(card), ...extraCards.map(cardId)])
+    const remainder = hand.filter((c) => !playedIds.has(cardId(c)))
+    const willReachLast =
+      state.config.requireLastCardCall &&
+      remainder.length >= 1 &&
+      isLastGroup(remainder, state.config)
     const base = { type: 'play' as const, seat, card, ...(extraCards.length ? { extraCards } : {}) }
     if (isSuitChange(card, state.config)) {
       for (const suit of ['c', 's', 'h', 'd'] as Suit[]) {
         moves.push({ ...base, chosenSuit: suit })
-        if (willReachOne) moves.push({ ...base, chosenSuit: suit, declareLastCard: true })
+        if (willReachLast) moves.push({ ...base, chosenSuit: suit, declareLastCard: true })
       }
     } else {
       moves.push(base)
-      if (willReachOne) moves.push({ ...base, declareLastCard: true })
+      if (willReachLast) moves.push({ ...base, declareLastCard: true })
     }
   }
 
@@ -325,7 +342,8 @@ export function reducer(
 
     case 'declare-last-card': {
       const next = clone(state)
-      if ((next.hands[move.seat]?.length ?? 0) === 1) {
+      // Valid for a single card OR one same-rank group (pair/triplet).
+      if (isLastGroup(next.hands[move.seat] ?? [], cfg)) {
         next.declaredLastCard = move.seat
         if (next.awaitingCall === move.seat) next.awaitingCall = null
       }
@@ -399,9 +417,11 @@ export function reducer(
         if (pk) next.pendingPickup += pk.amount
       }
 
-      // Last-card declaration handling.
-      const remaining = next.hands[move.seat]!.length
-      if (remaining === 1 && cfg.requireLastCardCall) {
+      // Last-card declaration handling. "Last card(s)" = a single card OR one
+      // same-rank group (pair/triplet) that can be dumped together next turn.
+      const remainingHand = next.hands[move.seat]!
+      const remaining = remainingHand.length
+      if (remaining >= 1 && isLastGroup(remainingHand, cfg) && cfg.requireLastCardCall) {
         if (move.declareLastCard) {
           next.declaredLastCard = move.seat
           next.awaitingCall = null

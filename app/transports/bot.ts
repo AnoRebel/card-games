@@ -30,12 +30,19 @@ export function chooseBotMove<S extends BaseGameState, M extends BaseMove, C>(
   )
   let pool = progress.length > 0 ? progress : moves
 
-  // When a play would reduce us to our last card, always declare it (avoids the
-  // missed-call penalty and lets the bot actually go out).
-  const withDeclare = pool.filter(
-    (m) => (m as { declareLastCard?: boolean }).declareLastCard === true,
+  // Always call "Last Card" when possible — a play that declares alongside it,
+  // or a standalone out-of-turn declare — to dodge the missed-call penalty.
+  const declaring = moves.filter(
+    (m) =>
+      m.type === 'declare-last-card' ||
+      (m as { declareLastCard?: boolean }).declareLastCard === true,
   )
-  if (withDeclare.length > 0) pool = withDeclare
+  if (declaring.length > 0) {
+    // A pending standalone declare is urgent → do it now.
+    const standalone = declaring.filter((m) => m.type === 'declare-last-card')
+    if (standalone.length > 0) return standalone[0] ?? null
+    pool = declaring
+  }
 
   // Among plays, prefer shedding the MOST cards (multi same-rank bundles) so a
   // larger move set never stalls progress toward a win.
