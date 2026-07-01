@@ -86,4 +86,9 @@ export interface RoomSnapshot {
   endedAt: string | null
   /** Epoch ms by which a dropped seated player must reconnect (else auto-end). */
   disconnectGraceUntil?: number | null
+  /**
+   * Name of the host who MANUALLY ended the game (via the End button), so
+   * clients can notify. Null for a natural terminal end or a grace auto-end.
+   */
+  endedBy?: string | null
 }

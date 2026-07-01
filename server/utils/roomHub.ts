@@ -60,6 +60,8 @@ interface Room {
   endedAt: string | null
   /** Epoch ms by which a dropped seated player must reconnect, else auto-end. */
   disconnectGraceUntil: number | null
+  /** Name of the host who manually ended the game (End button); null otherwise. */
+  endedBy: string | null
 }
 
 let counter = 0
@@ -149,6 +151,7 @@ export class RoomHub {
       startedAt: null,
       endedAt: null,
       disconnectGraceUntil: null,
+      endedBy: null,
     })
     return id
   }
@@ -403,6 +406,9 @@ export class RoomHub {
     if (!room || room.hostClientId !== peer.id) return
     room.phase = 'finished'
     room.endedAt = new Date().toISOString()
+    // Record who ended it so every client can notify (natural/auto ends leave
+    // this null).
+    room.endedBy = room.members.get(peer.id)?.name ?? 'The host'
     this.broadcastRoom(room)
   }
 
@@ -505,6 +511,7 @@ export class RoomHub {
       startedAt: room.startedAt,
       endedAt: room.endedAt,
       disconnectGraceUntil: room.disconnectGraceUntil,
+      endedBy: room.endedBy,
     }
   }
 

@@ -65,7 +65,10 @@ export function useGameNotifications(
     // Join/leave notifications (online rooms). Diff the presence roster.
     const withPresence = transport as GameTransport<BaseGameState, BaseMove> & {
       onPresence?: (cb: () => void) => () => void
+      getRoomInfo?: () => { endedBy?: string | null } | null
     }
+    // Notify once when the host MANUALLY ends the game (endedBy goes non-null).
+    let prevEndedBy: string | null = null
     // Track only CONNECTED members: a disconnected player is kept in the roster
     // (for grace-period reconnect) with connected:false, so we must treat the
     // connected→disconnected transition as "left", not just roster removal.
@@ -93,6 +96,16 @@ export function useGameNotifications(
           }
         }
         known = current
+
+        // Host manually ended the game → notify everyone once.
+        const endedBy = withPresence.getRoomInfo?.()?.endedBy ?? null
+        if (endedBy && endedBy !== prevEndedBy) {
+          notifyTop(
+            $t('game.endedByHost', { name: endedBy }),
+            'i-lucide-octagon-x',
+          )
+        }
+        prevEndedBy = endedBy
       }) ?? null
 
   off = transport.onChange((view) => {

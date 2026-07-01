@@ -227,6 +227,42 @@ describe('RoomHub — spectator access control', () => {
   })
 })
 
+describe('RoomHub — manual end', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    hub = new RoomHub()
+  })
+
+  it('the host ending the game broadcasts endedBy with their name', () => {
+    const roomId = hub.createRoom(lastCardConfig())
+    const a = new MockPeer('A')
+    const b = new MockPeer('B')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'Alice' }))
+    hub.onMessage(b, JSON.stringify({ t: 'join', roomId, playerId: 'pb', name: 'Bob' }))
+    hub.onMessage(a, JSON.stringify({ t: 'start', roomId }))
+    expect(a.last('room').room.endedBy).toBeNull()
+
+    // Host (A) ends the game.
+    hub.onMessage(a, JSON.stringify({ t: 'end', roomId }))
+    // Everyone gets a room snapshot: finished + endedBy = the host's name.
+    expect(b.last('room').room.phase).toBe('finished')
+    expect(b.last('room').room.endedBy).toBe('Alice')
+  })
+
+  it('a NON-host cannot end the game', () => {
+    const roomId = hub.createRoom(lastCardConfig())
+    const a = new MockPeer('A')
+    const b = new MockPeer('B')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'Alice' }))
+    hub.onMessage(b, JSON.stringify({ t: 'join', roomId, playerId: 'pb', name: 'Bob' }))
+    hub.onMessage(a, JSON.stringify({ t: 'start', roomId }))
+    // B (not host) tries to end — ignored.
+    hub.onMessage(b, JSON.stringify({ t: 'end', roomId }))
+    expect(a.last('room').room.phase).toBe('in-progress')
+    expect(a.last('room').room.endedBy).toBeNull()
+  })
+})
+
 describe('RoomHub — custom ids & public listing', () => {
   let hub: RoomHub
   beforeEach(() => {
