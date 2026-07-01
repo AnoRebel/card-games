@@ -124,5 +124,12 @@
     "uploaded": "Uploaded",
     "darkMode": "Dark mode",
     "lightMode": "Light mode"
+  },
+  "pwa": {
+    "offlineReady": "Ready to play offline",
+    "newVersion": "A new version is available",
+    "reload": "Reload",
+    "installPrompt": "Install Card Games",
+    "install": "Install"
   }
 }

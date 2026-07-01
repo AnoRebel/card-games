@@ -14,9 +14,60 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/image',
     '@nuxt/fonts',
+    '@vite-pwa/nuxt',
     'nuxt-i18n-micro',
     'nuxt-umami',
   ],
+
+  // PWA — installable + offline-capable. Offline/LAN play is fully client-side
+  // (IndexedDB + the local engine), so we precache the app shell, card art and
+  // fonts. The realtime API/WebSocket paths are never cached (they need the
+  // network); the SPA navigate fallback is denied for them.
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Card Games — Last Card & Albastini',
+      short_name: 'Card Games',
+      description:
+        'Play Last Card and Albastini — offline, on your local network, or online with friends.',
+      lang: 'en',
+      theme_color: '#1b3a2c',
+      background_color: '#0f2419',
+      display: 'standalone',
+      orientation: 'any',
+      categories: ['games', 'entertainment'],
+      icons: [
+        { src: '/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
+        { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+        {
+          src: '/maskable-icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/',
+      // Realtime paths must hit the network, never the offline app shell.
+      navigateFallbackDenylist: [/^\/api\//, /^\/_ws/],
+      // Precache the shell + assets needed to play offline (card art is large).
+      globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,json}'],
+      maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      cleanupOutdatedCaches: true,
+    },
+    client: {
+      // Intercept the browser install prompt so we can show our own button.
+      installPrompt: true,
+      // Re-check for a new service worker hourly (cheap; autoUpdate applies it).
+      periodicSyncForUpdates: 3600,
+    },
+    devOptions: {
+      enabled: false,
+      type: 'module',
+    },
+  },
 
   // Privacy-friendly, self-hosted analytics (same stack as other side projects).
   // Both are no-ops until their site ids are provided via env, so local/dev runs
@@ -38,6 +89,17 @@ export default defineNuxtConfig({
   // is present; the script handles SPA route tracking itself.
   app: {
     head: {
+      meta: [
+        // Matches the PWA manifest theme_color so the browser/OS chrome tints
+        // to the felt-green brand when installed.
+        { name: 'theme-color', content: '#1b3a2c' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-title', content: 'Card Games' },
+      ],
+      link: [
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon-180x180.png' },
+      ],
       script: process.env.NUXT_RYBBIT_SITE_ID
         ? [
             {

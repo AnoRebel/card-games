@@ -124,5 +124,12 @@
     "uploaded": "Imepakiwa",
     "darkMode": "Hali ya giza",
     "lightMode": "Hali ya mwanga"
+  },
+  "pwa": {
+    "offlineReady": "Tayari kucheza nje ya mtandao",
+    "newVersion": "Toleo jipya linapatikana",
+    "reload": "Pakia upya",
+    "installPrompt": "Sakinisha Card Games",
+    "install": "Sakinisha"
   }
 }
