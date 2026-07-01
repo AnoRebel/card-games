@@ -11,6 +11,9 @@ import type { GameTransport } from '~/transports/types'
 const props = defineProps<{ transport: GameTransport; name: string }>()
 
 const session = useGameSession(props.transport)
+// Stable local identity → local hotseat chat is attributed to the device owner,
+// not the rotating active seat. (Online ignores this; the server attributes it.)
+const { id: localId, name: localName } = usePlayerIdentity()
 const draft = ref('')
 const open = ref(false)
 const unread = ref(0)
@@ -56,7 +59,10 @@ function scrollToEnd() {
 async function send() {
   const body = draft.value.trim()
   if (!body) return
-  const res = await session.sendChat(body)
+  const res = await session.sendChat(body, {
+    id: localId.value,
+    name: props.name || localName.value,
+  })
   if (res.ok) draft.value = ''
 }
 function time(iso: string) {

@@ -165,6 +165,46 @@ describe('Last Card — last card call & penalty', () => {
     expect(s.awaitingCall).toBeNull()
   })
 
+  it('allows an OUT-OF-TURN declaration before the next player acts', () => {
+    let s = init()
+    s = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      hands: { 0: [{ rank: 4, suit: 'h' }, { rank: 9, suit: 'h' }], 1: [{ rank: 9, suit: 'c' }, { rank: 3, suit: 'c' }], 2: [{ rank: 9, suit: 'd' }] },
+    }
+    // Seat 0 plays plain → reaches one card, awaitingCall, turn passes to seat 1.
+    const r1 = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: { rank: 4, suit: 'h' } } as LastCardMove)
+    s = (r1 as { state: LastCardState }).state
+    expect(s.awaitingCall).toBe(0)
+    expect(s.activeSeat).toBe(1)
+
+    // Seat 0 (NOT active) is offered a standalone declare move…
+    const off = lastCardGame.getLegalMoves(s, 0)
+    expect(off).toEqual([{ type: 'declare-last-card', seat: 0 }])
+    // …and can play it out of turn.
+    const before = handCount(s, 0)
+    const r2 = applyMove(lastCardGame, s, { type: 'declare-last-card', seat: 0 } as LastCardMove)
+    expect(r2.ok).toBe(true)
+    s = (r2 as { state: LastCardState }).state
+    expect(s.declaredLastCard).toBe(0)
+    expect(s.awaitingCall).toBeNull()
+
+    // Now when seat 1 acts, no penalty (they declared in time).
+    const r3 = applyMove(lastCardGame, s, { type: 'draw', seat: 1 } as LastCardMove)
+    s = (r3 as { state: LastCardState }).state
+    expect(handCount(s, 0)).toBe(before)
+  })
+
+  it('a non-awaiting seat still gets "Not your turn" off-turn', () => {
+    const s = init()
+    // Seat 1 (not active, not awaiting) has no off-turn move.
+    expect(lastCardGame.getLegalMoves(s, 1)).toEqual([])
+    const r = applyMove(lastCardGame, s, { type: 'draw', seat: 1 } as LastCardMove)
+    expect(r.ok).toBe(false)
+  })
+
   it('declaring with the play avoids the penalty', () => {
     let s = init()
     s = {

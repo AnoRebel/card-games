@@ -530,10 +530,11 @@ export class RoomHub {
     const member = room.members.get(peer.id)
     const viewer: Seat | null = member?.seat ?? null
     const redacted = game.redactFor(room.state, viewer)
+    // Always ask the engine — it returns the on-turn moves for the active seat
+    // AND any off-turn moves (e.g. an out-of-turn "Last Card" declaration for a
+    // seat that reduced to one card). The engine returns [] when there's nothing.
     const legalMoves =
-      viewer !== null && room.state.activeSeat === viewer
-        ? game.getLegalMoves(room.state, viewer)
-        : []
+      viewer !== null ? game.getLegalMoves(room.state, viewer) : []
     const scores = game.isTerminal(room.state)
       ? game.getScores(room.state)
       : null

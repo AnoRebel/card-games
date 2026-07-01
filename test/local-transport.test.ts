@@ -125,6 +125,15 @@ describe('LocalTransport', () => {
     expect(t.getChat()).toHaveLength(1)
     t.destroy()
   })
+
+  it('attributes local chat to the explicit sender (hotseat device owner)', async () => {
+    const t = makeTransport([0, 1])
+    await t.sendChat('hi', { id: 'device-owner', name: 'Alice' })
+    const [msg] = t.getChat()
+    expect(msg!.senderId).toBe('device-owner')
+    expect(msg!.senderName).toBe('Alice')
+    t.destroy()
+  })
 })
 
 describe('bot policy', () => {

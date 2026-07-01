@@ -76,8 +76,8 @@ export function useGameSession<
     return transport.submitMove(move)
   }
 
-  async function sendChat(body: string) {
-    return transport.sendChat(body)
+  async function sendChat(body: string, sender?: { id: string; name: string }) {
+    return transport.sendChat(body, sender)
   }
 
   return {

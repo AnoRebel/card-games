@@ -36,13 +36,19 @@ export function applyMove<
   if (game.isTerminal(state)) {
     return { ok: false, error: 'Game is already over', state }
   }
-  if (state.activeSeat !== null && move.seat !== state.activeSeat) {
-    return { ok: false, error: 'Not your turn', state }
-  }
-
+  // `getLegalMoves` is the single source of truth for what a seat may do. It
+  // already returns [] for a non-active seat EXCEPT for intentional off-turn
+  // moves (e.g. an out-of-turn "Last Card" declaration). So the legal-set check
+  // below subsumes the turn check — a seat with no legal move is rejected here.
   const legal = game.getLegalMoves(state, move.seat)
   if (!legal.some((m) => sameMove(m, move))) {
-    return { ok: false, error: 'Illegal move', state }
+    return {
+      ok: false,
+      error: state.activeSeat !== null && move.seat !== state.activeSeat
+        ? 'Not your turn'
+        : 'Illegal move',
+      state,
+    }
   }
 
   const result = game.reducer(state, move)

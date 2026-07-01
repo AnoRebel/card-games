@@ -68,8 +68,16 @@ export interface GameTransport<
   /** Presence of all participants. */
   getPresence(): PresenceInfo[]
 
-  /** Chat: send + subscribe. */
-  sendChat(body: string): Promise<{ ok: boolean; error?: string }>
+  /**
+   * Chat: send + subscribe. `sender` overrides the attributed identity — used by
+   * local hotseat where multiple humans share one device, so the message is
+   * stamped with the actual device owner rather than the rotating active seat.
+   * Online ignores `sender` (the server attributes by the connection's member).
+   */
+  sendChat(
+    body: string,
+    sender?: { id: string; name: string },
+  ): Promise<{ ok: boolean; error?: string }>
   onChat(cb: (messages: ChatMessage[]) => void): () => void
   getChat(): ChatMessage[]
 

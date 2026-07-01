@@ -285,7 +285,9 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
     return this.roomInfo
   }
 
-  async sendChat(body: string) {
+  // `sender` is ignored online — the server attributes the message to this
+  // connection's member (identity can't be spoofed by the client).
+  async sendChat(body: string, _sender?: { id: string; name: string }) {
     const trimmed = body.trim()
     if (!trimmed) return { ok: false, error: 'empty' }
     this.sendRaw({ t: 'chat', roomId: this.opts.roomId, body: trimmed })

@@ -91,6 +91,7 @@
     "mustPlaySuit": "Lazima ucheze {suit} au ulambe",
     "suitRequested": "Imeombwa",
     "noPlayDraw": "Hakuna kadi ya kucheza — lamba",
+    "callLastCard": "Lia Kadi (Last Cards)",
     "gameOver": "Mchezo umeisha",
     "youWin": "Umeshinda!",
     "you": "wewe",

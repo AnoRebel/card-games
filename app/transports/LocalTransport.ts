@@ -82,13 +82,14 @@ export class LocalTransport<
     const redacted = this.game.redactFor(this.state, viewer)
     const active = this.state.activeSeat
     const isMyTurn = active !== null && active === viewer
+    // Fetch legal moves for the viewer whenever they have ANY — including
+    // off-turn moves like an out-of-turn "Last Card" declaration. The engine
+    // returns [] when there's genuinely nothing to do.
     return {
       ready: true,
       state: redacted,
       legalMoves:
-        isMyTurn && viewer !== null
-          ? this.game.getLegalMoves(this.state, viewer)
-          : [],
+        viewer !== null ? this.game.getLegalMoves(this.state, viewer) : [],
       scores: this.game.isTerminal(this.state)
         ? this.game.getScores(this.state)
         : null,
@@ -143,18 +144,22 @@ export class LocalTransport<
     }))
   }
 
-  async sendChat(body: string): Promise<{ ok: boolean; error?: string }> {
+  async sendChat(
+    body: string,
+    sender?: { id: string; name: string },
+  ): Promise<{ ok: boolean; error?: string }> {
     const trimmed = body.trim()
     if (!trimmed) return { ok: false, error: 'empty' }
     if (trimmed.length > 500) return { ok: false, error: 'too-long' }
-    const viewer = this.viewerSeat
-    const player = this.players.find((p) => p.seat === viewer)
+    // Prefer the explicit sender (the device owner). Only fall back to the
+    // active-seat player when no identity was supplied.
+    const fallback = this.players.find((p) => p.seat === this.viewerSeat)
     this.chat = [
       ...this.chat,
       {
         id: `${this.chat.length}-${this.state.version}`,
-        senderId: player?.id ?? 'local',
-        senderName: player?.name ?? 'You',
+        senderId: sender?.id ?? fallback?.id ?? 'local',
+        senderName: sender?.name ?? fallback?.name ?? 'You',
         body: trimmed,
         at: this.now(),
       },

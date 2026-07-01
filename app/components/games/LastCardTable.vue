@@ -55,6 +55,16 @@ const canOnlyDraw = computed(
     legalMoves.value.some((m) => m.type === 'draw'),
 )
 
+// Out-of-turn "Call Last Card!" — the engine offers a standalone
+// declare-last-card move when the viewer reduced to one card without declaring
+// (the window is open until the next player acts).
+const declareMove = computed(() =>
+  legalMoves.value.find((m) => m.type === 'declare-last-card') ?? null,
+)
+async function callLastCard() {
+  if (declareMove.value) await session.play(declareMove.value)
+}
+
 // --- move log ---------------------------------------------------------------
 const log = useMoveLog<LastCardState>((prev, next) => {
   if (!prev || !next.discardPile) return null
@@ -397,6 +407,20 @@ async function draw() {
       </div>
     </div>
 
+    <!-- Out-of-turn "Call Last Card!" — pulses until you declare or the window
+         closes (the next player acts). -->
+    <div v-if="declareMove" class="flex justify-center">
+      <button
+        type="button"
+        class="cg-call-last inline-flex items-center gap-2 text-sm font-bold rounded-full px-5 py-2 shadow-lg"
+        :style="{ background: 'var(--cg-accent)', color: 'var(--cg-accent-contrast)' }"
+        @click="callLastCard"
+      >
+        <UIcon name="i-lucide-megaphone" class="size-5" />
+        {{ $t('game.callLastCard') }}
+      </button>
+    </div>
+
     <!-- Turn pill -->
     <div class="flex justify-center">
       <span
@@ -547,9 +571,28 @@ async function draw() {
     opacity: 1;
   }
 }
+/* The "Call Last Card!" button pulses urgently until you declare. */
+.cg-call-last {
+  animation: cg-call-pulse 0.9s ease-in-out infinite;
+}
+.cg-call-last:hover {
+  transform: scale(1.05);
+}
+@keyframes cg-call-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--cg-accent) 55%, transparent);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px color-mix(in oklch, var(--cg-accent) 0%, transparent);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .cg-suit-requested,
-  .cg-must-draw {
+  .cg-must-draw,
+  .cg-call-last {
     animation: none;
   }
 }

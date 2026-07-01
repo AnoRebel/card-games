@@ -154,9 +154,25 @@ const playerCount = (state: LastCardState) => state.players.length
 
 /** Legal moves for `seat`. */
 export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] {
-  if (state.phase === 'finished' || state.activeSeat !== seat) return []
+  if (state.phase === 'finished') return []
+
+  // A seat that reduced to one card but hasn't declared may call "Last Card"
+  // OUT OF TURN — before the next player acts and closes the window. Without
+  // this, declaring is only possible atomically with the play, so a plain play
+  // guaranteed the missed-call penalty.
+  const canDeclareNow =
+    state.config.requireLastCardCall &&
+    state.awaitingCall === seat &&
+    (state.hands[seat]?.length ?? 0) === 1
+  const declareMoves: LastCardMove[] = canDeclareNow
+    ? [{ type: 'declare-last-card', seat }]
+    : []
+
+  // Off-turn: the only thing you may do is call your last card.
+  if (state.activeSeat !== seat) return declareMoves
+
   const hand = state.hands[seat] ?? []
-  const moves: LastCardMove[] = []
+  const moves: LastCardMove[] = [...declareMoves]
 
   const isAction = (c: Card) =>
     isPickup(c, state.config) !== undefined ||
