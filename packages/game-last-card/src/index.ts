@@ -83,5 +83,5 @@ export function registerLastCard(): void {
 export { defaultLastCardConfig, type LastCardConfig } from './config'
 export type { LastCardState, LastCardMove } from './state'
 export { canPlay } from './rules'
-export { lastCardRules, lastCardTutorial } from './content'
+export { lastCardRules, lastCardTutorial, lastCardRulesSw, lastCardTutorialSw } from './content'
 export type { RulesSection, TutorialStep } from './content'

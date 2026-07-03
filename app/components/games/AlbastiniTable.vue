@@ -19,6 +19,15 @@ const emit = defineEmits<{ restart: []; newGame: []; exit: [] }>()
 const session = useGameSession(props.transport)
 const { state, legalMoves, isMyTurn, scores, players, viewerSeat, ready } = session
 
+// Respect prefers-reduced-motion for the declarative trick-card entrance.
+const reducedMotion = computed(() => usePreferredReducedMotion().value === 'reduce')
+const trickInitial = computed(() =>
+  reducedMotion.value ? { opacity: 1 } : { opacity: 0, y: 24, scale: 0.85 },
+)
+const trickEnter = computed(() =>
+  reducedMotion.value ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 },
+)
+
 // Defensive default so the template never reads undefined fields before the
 // first server state arrives (online lobby) — the table is gated on `ready`.
 const ab = computed(
@@ -306,8 +315,8 @@ async function passBid() {
           v-for="tp in ab.currentTrick"
           :key="`${tp.seat}-${cardId(tp.card)}`"
           v-motion
-          :initial="{ opacity: 0, y: 24, scale: 0.85 }"
-          :enter="{ opacity: 1, y: 0, scale: 1 }"
+          :initial="trickInitial"
+          :enter="trickEnter"
           class="flex flex-col items-center gap-1"
         >
           <PlayingCard :card="tp.card" :width="78" />

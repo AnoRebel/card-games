@@ -23,7 +23,27 @@
     "appearance": "Muonekano",
     "optional": "hiari",
     "or": "au",
-    "refresh": "Onyesha upya"
+    "refresh": "Onyesha upya",
+    "public": "Wazi",
+    "private": "Faragha",
+    "spectating": "Unatazama",
+    "noRules": "Hakuna sheria za mchezo huu bado."
+  },
+  "room": {
+    "aboutLinks": "Kuhusu viungo vya chumba",
+    "playerLink": "Kiungo cha mchezaji",
+    "spectatorLink": "Kiungo cha mtazamaji",
+    "playerLinkExplain": "shiriki ili watu wajiunge na kucheza.",
+    "spectatorLinkExplain": "shiriki ili watu watazame tu.",
+    "privateExplain": "Chumba hiki ni cha faragha: viungo vina nenosiri, hivyo ni wale tu unaowashirikisha wanaoweza kuingia.",
+    "publicExplain": "Chumba hiki ni cha wazi: yeyote mwenye kiungo anaweza kuingia.",
+    "copyPasscode": "Nakili nenosiri",
+    "copyPlayerLink": "Nakili kiungo wachezaji hutumia kujiunga",
+    "copySpectatorLink": "Nakili kiungo cha kutazama tu",
+    "startGame": "Anza mchezo",
+    "needPlayers": "Unahitaji angalau wachezaji {min}",
+    "endGame": "Maliza mchezo",
+    "waitingForHost": "Kumsubiri mwenyeji…"
   },
   "lobby": {
     "playOffline": "Cheza nje ya mtandao",

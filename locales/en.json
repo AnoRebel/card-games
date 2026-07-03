@@ -23,7 +23,27 @@
     "appearance": "Appearance",
     "optional": "optional",
     "or": "or",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "public": "Public",
+    "private": "Private",
+    "spectating": "Spectating",
+    "noRules": "No rules available for this game yet."
+  },
+  "room": {
+    "aboutLinks": "About room links",
+    "playerLink": "Player link",
+    "spectatorLink": "Spectator link",
+    "playerLinkExplain": "share to let people join and play.",
+    "spectatorLinkExplain": "share to let people watch only.",
+    "privateExplain": "This room is private: links include the passcode, so only people you share them with can enter.",
+    "publicExplain": "This room is public: anyone with a link can enter.",
+    "copyPasscode": "Copy passcode",
+    "copyPlayerLink": "Copy the link players use to join",
+    "copySpectatorLink": "Copy the watch-only link",
+    "startGame": "Start the game",
+    "needPlayers": "Need at least {min} players",
+    "endGame": "End the game",
+    "waitingForHost": "Waiting for host…"
   },
   "lobby": {
     "playOffline": "Play offline",

@@ -79,7 +79,7 @@ const graceSeconds = computed(() => {
 
     <!-- Spectator indicator (read-only) -->
     <UBadge v-if="amSpectator" color="neutral" variant="subtle" icon="i-lucide-eye">
-      Spectating
+      {{ $t('common.spectating') }}
     </UBadge>
 
     <UBadge
@@ -87,19 +87,19 @@ const graceSeconds = computed(() => {
       variant="subtle"
       :icon="isLocked ? 'i-lucide-lock' : 'i-lucide-globe'"
     >
-      {{ isLocked ? 'Private' : 'Public' }}
+      {{ isLocked ? $t('common.private') : $t('common.public') }}
     </UBadge>
 
     <!-- Click/focus (default) mode so the help is reachable by keyboard and
          touch, not hover-only. -->
     <UPopover>
-      <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-info" aria-label="About room links" />
+      <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-info" :aria-label="$t('room.aboutLinks')" />
       <template #content>
         <div class="p-3 text-xs max-w-64 space-y-1.5" :style="{ color: 'var(--cg-text-muted)' }">
-          <p><strong class="text-default">Player link</strong> — share to let people join and play.</p>
-          <p><strong class="text-default">Spectator link</strong> — share to let people watch only.</p>
-          <p v-if="isLocked">This room is <strong class="text-default">private</strong>: links include the passcode, so only people you share them with can enter.</p>
-          <p v-else>This room is <strong class="text-default">public</strong>: anyone with a link can enter.</p>
+          <p><strong class="text-default">{{ $t('room.playerLink') }}</strong> — {{ $t('room.playerLinkExplain') }}</p>
+          <p><strong class="text-default">{{ $t('room.spectatorLink') }}</strong> — {{ $t('room.spectatorLinkExplain') }}</p>
+          <p v-if="isLocked">{{ $t('room.privateExplain') }}</p>
+          <p v-else>{{ $t('room.publicExplain') }}</p>
         </div>
       </template>
     </UPopover>
@@ -112,7 +112,7 @@ const graceSeconds = computed(() => {
         variant="soft"
         color="warning"
         icon="i-lucide-key-round"
-        title="Copy passcode"
+        :title="$t('room.copyPasscode')"
         @click="copyAs('code', passcode)"
       >
         {{ copiedKey === 'code' ? $t('game.copied') : passcode }}
@@ -121,7 +121,7 @@ const graceSeconds = computed(() => {
         size="xs"
         variant="outline"
         icon="i-lucide-link"
-        title="Copy the link players use to join"
+        :title="$t('room.copyPlayerLink')"
         @click="copyAs('player', shareUrl)"
       >
         {{ copiedKey === 'player' ? $t('game.copied') : $t('game.playerLink') }}
@@ -132,7 +132,7 @@ const graceSeconds = computed(() => {
         variant="outline"
         color="neutral"
         icon="i-lucide-eye"
-        title="Copy the watch-only link"
+        :title="$t('room.copySpectatorLink')"
         @click="copyAs('spectator', spectatorUrl)"
       >
         {{ copiedKey === 'spectator' ? $t('game.copied') : $t('game.spectatorLink') }}
@@ -148,7 +148,7 @@ const graceSeconds = computed(() => {
         color="primary"
         icon="i-lucide-play"
         :disabled="!canStart"
-        :title="canStart ? 'Start the game' : `Need at least ${minPlayers} players`"
+        :title="canStart ? $t('room.startGame') : $t('room.needPlayers', { min: minPlayers })"
         @click="transport.startGame()"
       >
         {{ $t('common.start') }}
@@ -159,14 +159,14 @@ const graceSeconds = computed(() => {
         color="error"
         variant="soft"
         icon="i-lucide-square"
-        title="End the game"
+        :title="$t('room.endGame')"
         @click="transport.endGame()"
       >
         {{ $t('common.end') }}
       </UButton>
     </template>
     <UBadge v-else color="neutral" variant="subtle">
-      {{ phase === 'lobby' ? 'Waiting for host…' : phase }}
+      {{ phase === 'lobby' ? $t('room.waitingForHost') : $t(`lobby.phase${phase === 'in-progress' ? 'InProgress' : 'Finished'}`) }}
     </UBadge>
     </div>
   </div>

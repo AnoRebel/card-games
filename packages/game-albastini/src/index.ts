@@ -82,5 +82,5 @@ export {
   SUPPORTED_COUNTS,
 } from './config'
 export type { AlbastiniState, AlbastiniMove } from './state'
-export { albastiniRules, albastiniTutorial } from './content'
+export { albastiniRules, albastiniTutorial, albastiniRulesSw, albastiniTutorialSw } from './content'
 export type { RulesSection, TutorialStep } from './content'

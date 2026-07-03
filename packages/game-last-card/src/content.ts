@@ -77,3 +77,68 @@ export const lastCardTutorial: TutorialStep[] = [
     content: 'Down to one card? Declare “Last Card” or risk a penalty!',
   },
 ]
+
+// --- Swahili translations (selected by locale in useGameContent) ------------
+
+export const lastCardRulesSw: RulesSection[] = [
+  {
+    heading: 'Lengo',
+    body: ['Kuwa wa kwanza kumaliza karata zako zote. Alama chache zaidi hushinda mchezo.'],
+  },
+  {
+    heading: 'Maandalizi',
+    body: [
+      'Kila mchezaji hupewa karata 7 kutoka pakiti ya karata 54 (52 za kawaida pamoja na majoka 2).',
+      'Karata ya juu ya pakiti hugeuzwa kuanzisha rundo la kutupa.',
+    ],
+  },
+  {
+    heading: 'Zamu yako',
+    body: [
+      'Cheza karata inayolingana na rundo la kutupa kwa aina au kwa daraja.',
+      'Una karata mbili au zaidi za daraja moja? Waweza kuzicheza zote pamoja kwa zamu moja.',
+      'Kama huwezi kucheza, lamba karata moja na zamu yako inaisha.',
+      'Huwezi kushinda kwa karata ya kitendo — karata yako ya mwisho lazima iwe ya kawaida.',
+    ],
+  },
+  {
+    heading: 'Karata za kitendo',
+    body: [
+      '2 — mchezaji anayefuata huchukua karata 2 (hizi hurundikana).',
+      'Joka — mchezaji anayefuata huchukua karata 5. Joka laweza kurundikwa juu ya 2 iliyosubiri (2 + 5 = 7), lakini 2 haiwezi kurundikwa juu ya Joka.',
+      '7 — huruka mchezaji anayefuata.',
+      '8 — hubadili mwelekeo wa mchezo.',
+      'Jeki — badili aina kuwa unayoichagua.',
+    ],
+  },
+  {
+    heading: 'Lia Kadi!',
+    body: [
+      'Unapofikia karata yako ya mwisho (au kundi lako la mwisho la daraja moja), lazima ulie "Lia Kadi".',
+      'Mchezo utakuuliza kwenye zamu yako — itangaze, au nyamaza uhatarishe adhabu ya karata 2 ukidakwa.',
+    ],
+  },
+]
+
+export const lastCardTutorialSw: TutorialStep[] = [
+  {
+    target: '[data-tour="hand"]',
+    title: 'Mkono wako',
+    content: 'Hizi ni karata zako. Gusa karata kuicheza kwenye zamu yako.',
+  },
+  {
+    target: '[data-tour="discard"]',
+    title: 'Rundo la kutupa',
+    content: 'Linganisha karata ya juu kwa aina au daraja ili kucheza.',
+  },
+  {
+    target: '[data-tour="draw"]',
+    title: 'Pakiti ya kulamba',
+    content: 'Huna cha kucheza? Lamba kutoka hapa.',
+  },
+  {
+    target: '[data-tour="last-card"]',
+    title: 'Lia Kadi',
+    content: 'Umebaki na karata moja? Tangaza "Lia Kadi" au uhatarishe adhabu!',
+  },
+]
