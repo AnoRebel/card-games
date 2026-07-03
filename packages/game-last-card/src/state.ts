@@ -20,6 +20,13 @@ export interface LastCardState extends BaseGameState {
   direction: 1 | -1
   /** Accumulated pickup penalty waiting to land on the next non-stacker. */
   pendingPickup: number
+  /**
+   * The per-card amount of the LAST pickup card played into `pendingPickup`
+   * (e.g. 2 for a two, 5 for a Joker), or 0 when nothing is pending. Stacking is
+   * ordered: you may only add a pickup whose amount is ≥ this, so a Joker (+5)
+   * may stack on a pending 2, but a 2 (+2) may NOT stack on a pending Joker.
+   */
+  pendingPickupUnit: number
   /** Seat that has validly declared "Last Card" (cleared when they play out). */
   declaredLastCard: Seat | null
   /**

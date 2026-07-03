@@ -2,30 +2,35 @@
  * Last Card variant configuration.
  *
  * The rules of Last Card vary widely by source, so action cards are modelled as
- * toggleable config rather than hardcoded. Defaults reflect the most common
- * ruleset (standard 52-card deck, 7-card hands, 2 = pickup-2, 8 = skip, Jack =
- * suit change, Ace = suit change with reverse off).
+ * toggleable config rather than hardcoded. Defaults reflect this project's
+ * ruleset (54-card deck incl. 2 jokers, 7-card hands, 2 = pick up 2, Joker =
+ * pick up 5, 7 = skip, 8 = reverse, Jack = suit-change wild).
+ *
+ * NB: the Joker is represented as rank 0 in `pickupCards` — jokers carry
+ * `rank: 0` (see engine-core `joker`/`isJoker`), so a `{ rank: 0, amount }`
+ * entry targets them.
  */
 
-import type { Rank } from '@card-games/engine-core'
-
-/** What a player must do when they cannot follow suit/rank. */
-export type DrawRule = 'draw-one' | 'draw-until-playable'
+import type { Card, Rank } from '@card-games/engine-core'
+import { isJoker } from '@card-games/engine-core'
 
 export interface LastCardConfig {
   /** Cards dealt to each player at the start of a round. */
   handSize: number
-  /** Draw behaviour when a player has no legal play. */
-  drawRule: DrawRule
   /**
    * If the turned starting card is an action card, re-draw a plain card to
    * start instead of applying its effect.
    */
   redrawActionStart: boolean
 
-  /** Ranks that force the next player to pick up, with the pickup amount. */
-  pickupCards: { rank: Rank; amount: number }[]
-  /** Allow stacking matching pickup cards to pass on an accumulating penalty. */
+  /**
+   * Ranks that force the next player to pick up, with the pickup amount.
+   * Rank 0 targets the Joker (a suitless wild pick-up card). Any pickup card may
+   * stack on any other when `allowPickupStacking` is on (e.g. a Joker's +5 on a
+   * 2's +2 → +7), since the pending penalty just accumulates.
+   */
+  pickupCards: { rank: Rank | 0; amount: number }[]
+  /** Allow stacking pickup cards to pass on an accumulating penalty. */
   allowPickupStacking: boolean
 
   /** Ranks that skip the next player's turn. */
@@ -60,12 +65,15 @@ export interface LastCardConfig {
 export function defaultLastCardConfig(): LastCardConfig {
   return {
     handSize: 7,
-    drawRule: 'draw-one',
     redrawActionStart: true,
-    pickupCards: [{ rank: 2, amount: 2 }],
+    // 2 = pick up 2, Joker (rank 0) = pick up 5; both stack (2 + Joker = +7).
+    pickupCards: [
+      { rank: 2, amount: 2 },
+      { rank: 0, amount: 5 },
+    ],
     allowPickupStacking: true,
-    skipCards: [8],
-    reverseCards: [],
+    skipCards: [7],
+    reverseCards: [8],
     suitChangeCards: [11], // Jack
     requireLastCardCall: true,
     missedCallPenalty: 2,
@@ -76,7 +84,9 @@ export function defaultLastCardConfig(): LastCardConfig {
 }
 
 /** Penalty point value of a card left in hand at round end. */
-export function cardPenaltyValue(rank: Rank): number {
+export function cardPenaltyValue(card: Card): number {
+  if (isJoker(card)) return 15 // Joker — the heaviest card to be caught holding
+  const rank = card.rank
   if (rank === 1) return 1 // Ace
   if (rank >= 11) return 10 // J/Q/K
   return rank // pip value

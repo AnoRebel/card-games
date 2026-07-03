@@ -27,11 +27,9 @@ const init = (seed = 'al', cfg?: Partial<AlbastiniConfig>) =>
 describe('Albastini — deck & ranking', () => {
   it('uses a 36-card deck with no 2/8/9/10', () => {
     const s = init('x', { enableBidding: false })
-    const all = [
-      ...Object.values(s.hands).flat(),
-      ...s.stock,
-      ...(s.trumpCard ? [s.trumpCard] : []),
-    ]
+    // The trump indicator lives IN the stock (bottom, drawn last), so all cards
+    // are just hands + stock — no separate out-of-play trump card.
+    const all = [...Object.values(s.hands).flat(), ...s.stock]
     expect(all).toHaveLength(36)
     expect(all.some((c) => [2, 8, 9, 10].includes(c.rank))).toBe(false)
   })
@@ -43,11 +41,7 @@ describe('Albastini — deck & ranking', () => {
 
   it('point values total 120 across the deck', () => {
     const s = init('x', { enableBidding: false })
-    const all = [
-      ...Object.values(s.hands).flat(),
-      ...s.stock,
-      ...(s.trumpCard ? [s.trumpCard] : []),
-    ]
+    const all = [...Object.values(s.hands).flat(), ...s.stock]
     const total = all.reduce((sum, c) => sum + pointValue(c.rank), 0)
     expect(total).toBe(120)
   })
@@ -272,5 +266,55 @@ describe('Albastini — engine guarantees', () => {
       card: s.hands[notActive]![0]!,
     } as AlbastiniMove
     expect(applyMove(albastiniGame, s, move).ok).toBe(false)
+  })
+})
+
+// Play a full hand to `finished`, always taking the first legal move.
+function playHand(s0: AlbastiniState): AlbastiniState {
+  let s = s0
+  for (let i = 0; i < 500 && s.phase !== 'finished'; i++) {
+    const moves = albastiniGame.getLegalMoves(s, s.activeSeat!)
+    if (!moves.length) break
+    const r = applyMove(albastiniGame, s, moves[0]!)
+    if (!r.ok) throw new Error(`move rejected: ${r.error}`)
+    s = r.state
+  }
+  return s
+}
+
+describe('Albastini — point conservation (trump card stays in play)', () => {
+  // Regression: the turned trump indicator used to be dropped from play, so a
+  // played-out hand's captured points summed to <120 whenever the trump was a
+  // point card. It must now ALWAYS total 120.
+  for (const bidding of [false, true]) {
+    for (const seed of ['pc-a', 'pc-b', 'pc-c']) {
+      it(`4p bidding=${bidding} seed=${seed} → captured points total 120`, () => {
+        const end = playHand(init(seed, { enableBidding: bidding }))
+        expect(end.phase).toBe('finished')
+        const captured = players4.reduce(
+          (sum, p) =>
+            sum + (end.taken[p.seat] ?? []).reduce((t, c) => t + pointValue(c.rank), 0),
+          0,
+        )
+        expect(captured).toBe(120)
+      })
+    }
+  }
+
+  it('a successful bidder still holds exactly 5 cards after trump reveal', () => {
+    // Search seeds for a hand where a bid matches the turned trump, then assert
+    // the bidder did not end up with 6 cards.
+    for (const seed of ['b0', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7']) {
+      let s = init(seed, { enableBidding: true })
+      // Drive the bidding phase to completion.
+      for (let i = 0; i < 20 && s.phase === 'bidding'; i++) {
+        const moves = albastiniGame.getLegalMoves(s, s.activeSeat!)
+        // Prefer an actual bid (to exercise the exchange) when available.
+        const pick = moves.find((m) => m.type === 'bid') ?? moves[0]!
+        s = applyMove(albastiniGame, s, pick).state
+      }
+      // Every hand must be exactly 5 after the reveal (no free extra card).
+      for (const p of players4) expect(s.hands[p.seat]!.length).toBe(5)
+    }
   })
 })

@@ -90,7 +90,9 @@ const graceSeconds = computed(() => {
       {{ isLocked ? 'Private' : 'Public' }}
     </UBadge>
 
-    <UPopover mode="hover">
+    <!-- Click/focus (default) mode so the help is reachable by keyboard and
+         touch, not hover-only. -->
+    <UPopover>
       <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-info" aria-label="About room links" />
       <template #content>
         <div class="p-3 text-xs max-w-64 space-y-1.5" :style="{ color: 'var(--cg-text-muted)' }">

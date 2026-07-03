@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   applyMove,
   replay,
+  joker,
   type Card,
   type Player,
   type Seat,
@@ -32,8 +33,8 @@ describe('Last Card — deal & start', () => {
     expect(handCount(s, 1)).toBe(7)
     expect(handCount(s, 2)).toBe(7)
     expect(s.discardPile).toHaveLength(1)
-    // 52 - 21 dealt - 1 start = 30 in draw pile
-    expect(s.drawPile).toHaveLength(30)
+    // 54 (incl. 2 jokers) - 21 dealt - 1 start = 32 in draw pile
+    expect(s.drawPile).toHaveLength(32)
     expect(s.activeSeat).toBe(0)
   })
 
@@ -452,6 +453,98 @@ describe('Last Card — multi same-rank plays', () => {
       (m) => m.type === 'play' && m.card.rank === 13 && (m.extraCards?.length ?? 0) === 1,
     )
     expect(pairMoves.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Last Card — jokers (pick up 5)', () => {
+  // A hand/table where seat 0 holds a joker plus filler.
+  const withJoker = (): LastCardState => {
+    const base = init()
+    return {
+      ...base,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      pendingPickup: 0,
+      pendingPickupUnit: 0,
+      hands: {
+        0: [joker(0), { rank: 4, suit: 'h' }, { rank: 9, suit: 's' }],
+        1: [{ rank: 2, suit: 'c' }, { rank: 3, suit: 'c' }],
+        2: [{ rank: 6, suit: 'd' }],
+      },
+    }
+  }
+
+  it('a joker is always playable and forces a +5 pickup (keeps active suit)', () => {
+    const s = withJoker()
+    expect(canPlay(s, joker(0))).toBe(true)
+    const r = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: joker(0) } as LastCardMove)
+    expect(r.ok).toBe(true)
+    const after = (r as { state: LastCardState }).state
+    expect(after.pendingPickup).toBe(5)
+    expect(after.pendingPickupUnit).toBe(5)
+    expect(after.activeSuit).toBe('h') // joker is suitless → prior suit carries
+  })
+
+  it('a Joker (+5) may stack onto a pending 2, but a 2 may NOT stack onto a pending Joker', () => {
+    const base = init()
+    // Pending 2 (+2) on the table, seat 1 to act holding a joker and a 2.
+    const s: LastCardState = {
+      ...base,
+      activeSeat: 1,
+      activeSuit: 'c',
+      discardPile: [{ rank: 2, suit: 'c' }],
+      pendingPickup: 2,
+      pendingPickupUnit: 2,
+      hands: {
+        0: [{ rank: 5, suit: 'h' }],
+        1: [joker(0), { rank: 2, suit: 'd' }],
+        2: [{ rank: 6, suit: 'd' }],
+      },
+    }
+    // Joker stacks on the 2 (2 + 5 = 7).
+    expect(canPlay(s, joker(0))).toBe(true)
+    // A 2 also stacks on a 2 (equal amount).
+    expect(canPlay(s, { rank: 2, suit: 'd' })).toBe(true)
+    const r = applyMove(lastCardGame, s, { type: 'play', seat: 1, card: joker(0) } as LastCardMove)
+    const afterJoker = (r as { state: LastCardState }).state
+    expect(afterJoker.pendingPickup).toBe(7)
+    expect(afterJoker.pendingPickupUnit).toBe(5)
+
+    // Now a pending JOKER (+5): a plain 2 may NOT stack on it (2 < 5).
+    const s2: LastCardState = { ...afterJoker, activeSeat: 2, hands: { ...afterJoker.hands, 2: [{ rank: 2, suit: 'h' }] } }
+    expect(canPlay(s2, { rank: 2, suit: 'h' })).toBe(false)
+    // Another joker WOULD stack (5 ≥ 5).
+    expect(canPlay(s2, joker(1))).toBe(true)
+  })
+
+  it('drawing the pending pickup clears the pickup unit', () => {
+    const s = withJoker()
+    const played = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: joker(0) } as LastCardMove)
+    const afterPlay = (played as { state: LastCardState }).state
+    // Seat 1 can't/won't stack → draws the +5.
+    const drew = applyMove(lastCardGame, afterPlay, { type: 'draw', seat: afterPlay.activeSeat! } as LastCardMove)
+    const after = (drew as { state: LastCardState }).state
+    expect(after.pendingPickup).toBe(0)
+    expect(after.pendingPickupUnit).toBe(0)
+  })
+
+  it('you cannot go out on a joker (it is an action card)', () => {
+    const base = init()
+    const s: LastCardState = {
+      ...base,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      pendingPickup: 0,
+      pendingPickupUnit: 0,
+      hands: { 0: [joker(0)], 1: [{ rank: 2, suit: 'c' }], 2: [{ rank: 6, suit: 'd' }] },
+    }
+    const moves = lastCardGame.getLegalMoves(s, 0)
+    // The lone joker cannot be the winning card → not offered as a play.
+    expect(moves.some((m) => m.type === 'play')).toBe(false)
+    // Only option is to draw.
+    expect(moves.some((m) => m.type === 'draw')).toBe(true)
   })
 })
 

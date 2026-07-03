@@ -208,6 +208,16 @@ props.transport.onChange((v) => {
   log.push(v.state)
 })
 
+// Online, submitMove returns {ok:true} optimistically and a server rejection
+// arrives asynchronously as an error event. Clear the local-fly guard then, so a
+// rejected play can't leave a stale id that mis-suppresses a later flight.
+const withError = props.transport as typeof props.transport & {
+  onError?: (cb: (msg: string) => void) => () => void
+}
+withError.onError?.(() => {
+  flownByLocal = null
+})
+
 function animateDraw(seat: number, count: number, viewer: number | null) {
   nextTick(() => {
     const to = seatAnchor(seat, viewer)

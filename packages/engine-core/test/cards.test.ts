@@ -8,6 +8,9 @@ import {
   cardName,
   cardShort,
   isRed,
+  isJoker,
+  joker,
+  jokers,
 } from '../src/index'
 
 describe('card model', () => {
@@ -46,5 +49,42 @@ describe('card model', () => {
     expect(isRed('d')).toBe(true)
     expect(isRed('c')).toBe(false)
     expect(isRed('s')).toBe(false)
+  })
+
+  describe('jokers', () => {
+    it('there are exactly two jokers with distinct ids (j0 colored, j1 black)', () => {
+      const js = jokers()
+      expect(js).toHaveLength(2)
+      expect(js.map(cardId)).toEqual(['j0', 'j1'])
+      expect(js.every(isJoker)).toBe(true)
+    })
+
+    it('standardDeck(true) is 54 unique cards including 2 jokers', () => {
+      const deck = standardDeck(true)
+      expect(deck).toHaveLength(54)
+      expect(new Set(deck.map(cardId)).size).toBe(54)
+      expect(deck.filter(isJoker)).toHaveLength(2)
+    })
+
+    it('deckWithout never includes jokers', () => {
+      expect(deckWithout([2, 8, 9, 10]).some(isJoker)).toBe(false)
+    })
+
+    it('joker cardId round-trips and has no sprite', () => {
+      for (const j of jokers()) {
+        expect(parseCardId(cardId(j))).toEqual(j)
+        expect(spriteId(j)).toBe('')
+      }
+    })
+
+    it('joker names/short labels', () => {
+      expect(cardName(joker(0))).toBe('Red Joker')
+      expect(cardName(joker(1))).toBe('Black Joker')
+      expect(cardShort(joker(0))).toBe('★')
+    })
+
+    it('isJoker is false for normal cards', () => {
+      expect(isJoker({ rank: 8, suit: 'c' })).toBe(false)
+    })
   })
 })

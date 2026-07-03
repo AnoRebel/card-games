@@ -11,6 +11,7 @@ import {
   type Suit,
   cardId,
   createRng,
+  isJoker,
   nextSeat,
   shuffle,
   standardDeck,
@@ -18,13 +19,16 @@ import {
 import { type LastCardConfig, cardPenaltyValue, defaultLastCardConfig } from './config'
 import type { LastCardMove, LastCardState } from './state'
 
+// A card's config "rank key": jokers use 0 (their placeholder rank), so all the
+// rank-keyed config lists (pickup/skip/reverse/suit-change) target them via 0.
+const rankKey = (c: Card): number => (isJoker(c) ? 0 : c.rank)
 const isPickup = (c: Card, cfg: LastCardConfig) =>
-  cfg.pickupCards.find((p) => p.rank === c.rank)
-const isSkip = (c: Card, cfg: LastCardConfig) => cfg.skipCards.includes(c.rank)
+  cfg.pickupCards.find((p) => p.rank === rankKey(c))
+const isSkip = (c: Card, cfg: LastCardConfig) => cfg.skipCards.includes(rankKey(c) as never)
 const isReverse = (c: Card, cfg: LastCardConfig) =>
-  cfg.reverseCards.includes(c.rank)
+  cfg.reverseCards.includes(rankKey(c) as never)
 const isSuitChange = (c: Card, cfg: LastCardConfig) =>
-  cfg.suitChangeCards.includes(c.rank)
+  cfg.suitChangeCards.includes(rankKey(c) as never)
 
 /**
  * Is `hand` a "last card(s)" state — i.e. it can be emptied in ONE more play,
@@ -51,16 +55,22 @@ export function canPlay(state: LastCardState, card: Card): boolean {
   const cfg = state.config
   const top = topDiscard(state)
 
-  // While a pickup penalty is pending, only a matching pickup card may be
-  // played (to stack); otherwise the seat must draw the penalty.
+  // While a pickup penalty is pending, only a pickup card may be played (to
+  // stack); otherwise the seat must draw the penalty. Stacking is ORDERED — the
+  // added card's amount must be ≥ the last pickup's amount, so a Joker (+5) may
+  // stack onto a pending 2, but a 2 (+2) may not stack onto a pending Joker.
   if (state.pendingPickup > 0) {
-    return cfg.allowPickupStacking && isPickup(card, cfg) !== undefined
+    if (!cfg.allowPickupStacking) return false
+    const pk = isPickup(card, cfg)
+    return pk !== undefined && pk.amount >= state.pendingPickupUnit
   }
 
-  // Suit-change (wild) cards are always playable.
-  if (isSuitChange(card, cfg)) return true
+  // Jokers and suit-change (wild) cards are always playable.
+  if (isJoker(card) || isSuitChange(card, cfg)) return true
 
-  // Otherwise match the active suit or the top card's rank.
+  // Otherwise match the active suit or the top card's rank. A joker on top has
+  // no suit/rank of its own — the active suit still carries (jokers don't change
+  // it), so `activeSuit` remains the thing to match.
   return card.suit === state.activeSuit || card.rank === top.rank
 }
 
@@ -73,7 +83,8 @@ function dealRound(
   LastCardState,
   'hands' | 'drawPile' | 'discardPile' | 'activeSuit' | 'rng'
 > {
-  const shuffled = shuffle(standardDeck(), rng)
+  // 54-card deck: the two jokers are the pick-up-five cards.
+  const shuffled = shuffle(standardDeck(true), rng)
   let deck = shuffled.items
   let r = shuffled.state
 
@@ -140,6 +151,7 @@ export function createInitialState(
     activeSuit: dealt.activeSuit,
     direction: 1,
     pendingPickup: 0,
+    pendingPickupUnit: 0,
     declaredLastCard: null,
     awaitingCall: null,
     round: 0,
@@ -299,7 +311,7 @@ function tallyRound(state: LastCardState, winner: Seat): Record<Seat, number> {
     const hand = state.hands[p.seat] ?? []
     cumulative[p.seat] =
       (cumulative[p.seat] ?? 0) +
-      hand.reduce((sum, c) => sum + cardPenaltyValue(c.rank), 0)
+      hand.reduce((sum, c) => sum + cardPenaltyValue(c), 0)
   }
   return cumulative
 }
@@ -322,6 +334,7 @@ export function reducer(
       // If a pickup penalty is pending and the seat draws, they take it all.
       const toDraw = next.pendingPickup > 0 ? next.pendingPickup : 1
       next.pendingPickup = 0
+      next.pendingPickupUnit = 0
 
       for (let i = 0; i < toDraw; i++) {
         if (next.drawPile.length === 0) {
@@ -338,9 +351,8 @@ export function reducer(
       // Resolve any pending missed-call penalty window closing on this action.
       applyMissedCall(next, move.seat)
 
-      // Drawing ends the turn (single-draw rule) unless draw-until-playable
-      // leaves them a play — for simplicity we end the turn after drawing the
-      // required card(s); the UI re-prompts on their next turn.
+      // Drawing one card ends the turn (single-draw rule). A player who no
+      // longer has a last-group after drawing loses their pending declaration.
       next.declaredLastCard =
         next.declaredLastCard === move.seat ? null : next.declaredLastCard
       next.activeSeat = nextSeat(move.seat, count, next.direction)
@@ -410,18 +422,26 @@ export function reducer(
       )
       for (const c of played) next.discardPile.push(c)
 
-      // Active suit: nominated suit for wilds, else the (last) played card's suit.
+      // Active suit: nominated suit for wilds; else the last played card's suit —
+      // but a Joker is suitless, so it does NOT change the active suit (it just
+      // carries over, and the next player still matches the prior demand).
       const topPlayed = played[played.length - 1]!
-      next.activeSuit =
-        isSuitChange(move.card, cfg) && move.chosenSuit
-          ? move.chosenSuit
-          : topPlayed.suit
+      if (isSuitChange(move.card, cfg) && move.chosenSuit) {
+        next.activeSuit = move.chosenSuit
+      } else if (!isJoker(topPlayed)) {
+        next.activeSuit = topPlayed.suit
+      } // else: joker on top → keep existing activeSuit
 
-      // Direction / pickup / skip effects apply PER played card.
+      // Direction / pickup effects apply PER played card. Track the largest
+      // pickup unit played so stacking stays ordered (a later 2 can't undercut a
+      // Joker). Skip is applied via the turn-step math below (isSkip).
       for (const c of played) {
         if (isReverse(c, cfg)) next.direction = (next.direction * -1) as 1 | -1
         const pk = isPickup(c, cfg)
-        if (pk) next.pendingPickup += pk.amount
+        if (pk) {
+          next.pendingPickup += pk.amount
+          next.pendingPickupUnit = Math.max(next.pendingPickupUnit, pk.amount)
+        }
       }
 
       // Last-card declaration handling. "Last card(s)" = a single card OR one
@@ -443,6 +463,7 @@ export function reducer(
         // The winner's hand is empty; any obligation their final card created
         // dies with the round.
         next.pendingPickup = 0
+        next.pendingPickupUnit = 0
         next.awaitingCall = null
         next.cumulativeScores = tallyRound(next, move.seat)
         if (next.round + 1 >= cfg.rounds) {
@@ -460,6 +481,7 @@ export function reducer(
         next.rng = dealt.rng
         next.round += 1
         next.pendingPickup = 0
+        next.pendingPickupUnit = 0
         next.direction = 1
         next.declaredLastCard = null
         next.awaitingCall = null

@@ -85,7 +85,16 @@ export function createInitialState(
   return state
 }
 
-/** Reveal trump from the top of stock and resolve any matching bid. */
+/**
+ * Reveal trump from the top of stock and resolve any matching bid.
+ *
+ * The turned trump indicator stays IN PLAY — it is slid to the BOTTOM of the
+ * stock so it becomes the last card drawn (authentic rule; keeps every hand's
+ * captured points totalling 120). If a bidder named the trump suit, they
+ * EXCHANGE: their bid card is surrendered to the bottom of the stock (drawn
+ * last, in the indicator's place) and the indicator enters their hand — so the
+ * bidder's hand stays at HAND_SIZE and no card leaves circulation.
+ */
 function revealTrump(state: AlbastiniState): void {
   const trumpCard = state.stock[0]
   if (!trumpCard) {
@@ -94,13 +103,28 @@ function revealTrump(state: AlbastiniState): void {
     state.trumpCard = null
   } else {
     state.trump = trumpCard.suit
+    // `trumpCard` is kept for DISPLAY only (which card set trump). The actual
+    // card is now tracked by identity in the stock / a hand, and scoring sums
+    // only the `taken` piles, so this display copy is never double-counted.
     state.trumpCard = trumpCard
-    state.stock = state.stock.slice(1)
-    // A bidder who named the trump suit claims the indicator.
+    const rest = state.stock.slice(1)
+    // A bidder who named the trump suit claims the indicator by exchange.
     const matching = state.bids.find((b) => b.card.suit === state.trump)
     if (matching) {
-      state.hands[matching.seat]!.push(trumpCard)
-      state.trumpCard = null
+      const hand = state.hands[matching.seat]!
+      const i = hand.findIndex((c) => cardId(c) === cardId(matching.card))
+      if (i !== -1) {
+        const bidCard = hand.splice(i, 1)[0]!
+        hand.push(trumpCard) // indicator into the bidder's hand
+        // The surrendered bid card goes to the bottom of the stock (drawn last).
+        state.stock = [...rest, bidCard]
+      } else {
+        // Defensive: bid card no longer in hand — keep the indicator in play.
+        state.stock = [...rest, trumpCard]
+      }
+    } else {
+      // No matching bid: the indicator simply becomes the last card drawn.
+      state.stock = [...rest, trumpCard]
     }
   }
   state.phase = 'playing'
@@ -160,7 +184,12 @@ function trickWinner(
   return best.seat
 }
 
-/** Refill hands to HAND_SIZE from stock, starting at `from` in seat order. */
+/**
+ * Refill hands to HAND_SIZE from stock, beginning with `from` (the trick
+ * winner) and proceeding ANTICLOCKWISE — the same direction as play — so the
+ * trump indicator at the bottom of the stock is drawn last, by the player to
+ * the winner's right (authentic rule).
+ */
 function refill(state: AlbastiniState, from: Seat): void {
   const count = state.players.length
   let seat = from
@@ -171,7 +200,7 @@ function refill(state: AlbastiniState, from: Seat): void {
     ) {
       state.hands[seat]!.push(state.stock.shift()!)
     }
-    seat = nextSeat(seat, count, 1)
+    seat = nextSeat(seat, count, -1)
   }
 }
 

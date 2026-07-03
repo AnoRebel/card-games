@@ -130,6 +130,16 @@ props.transport.onChange((v) => {
   log.push(v.state)
 })
 
+// Online, a server rejection arrives asynchronously as an error event (not in
+// submitMove's optimistic {ok:true}). Clear the local-fly guard then so a
+// rejected play can't leave a stale id that mis-suppresses a later flight.
+const withError = props.transport as typeof props.transport & {
+  onError?: (cb: (msg: string) => void) => () => void
+}
+withError.onError?.(() => {
+  flownByLocal = null
+})
+
 // Shuffle flourish on a fresh deal. Keyed off the STOCK size jumping up (a
 // stable, viewer-independent signal) rather than `myHand.length`, which swaps
 // identity in offline hotseat when the viewer seat flips. Primed guard skips

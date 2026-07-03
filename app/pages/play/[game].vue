@@ -28,6 +28,13 @@ const transport = shallowRef<GameTransport | null>(null)
 const wsTransport = computed(() =>
   transport.value?.mode === 'online' ? (transport.value as WsTransport<never, never>) : null,
 )
+// Remount the game table whenever the transport INSTANCE changes (e.g. an
+// offline rematch swaps in a fresh LocalTransport). Without this, the table's
+// setup-time onChange/useGameSession subscriptions stay bound to the destroyed
+// transport and the game silently freezes after a rematch. Keying by a counter
+// that bumps on every instance swap forces a clean re-setup against the new one.
+const transportRev = ref(0)
+watch(transport, () => { transportRev.value++ })
 const showRules = ref(route.query.rules === '1')
 const showLeaderboard = ref(false)
 const banner = ref<{ type: 'error' | 'info'; text: string } | null>(null)
@@ -384,6 +391,7 @@ const spectatorShareUrl = computed(() => {
 
       <LastCardTable
         v-if="gameId === 'last-card'"
+        :key="`lc-${transportRev}`"
         :transport="(transport as any)"
         :can-rematch="canRematch"
         @restart="restart"
@@ -392,6 +400,7 @@ const spectatorShareUrl = computed(() => {
       />
       <AlbastiniTable
         v-else-if="gameId === 'albastini'"
+        :key="`ab-${transportRev}`"
         :transport="(transport as any)"
         :can-rematch="canRematch"
         @restart="restart"

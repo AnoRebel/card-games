@@ -6,7 +6,7 @@
  */
 import { useDrag } from '@vueuse/gesture'
 import type { Card } from '@card-games/engine-core'
-import { cardId } from '@card-games/engine-core'
+import { cardId, cardName } from '@card-games/engine-core'
 
 const props = withDefaults(
   defineProps<{
@@ -149,6 +149,7 @@ defineExpose({ cardEl, rootEl })
           :width="width"
           :selectable="isPlayable(card)"
           :disabled="enabled && !isPlayable(card)"
+          :action-label="isPlayable(card) ? `Play ${cardName(card)}` : null"
           @select="onTap(card)"
         />
       </div>

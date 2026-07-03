@@ -1,6 +1,7 @@
 // @card-games/game-last-card — Last Card game module.
 
 import {
+  type Card,
   type GameModule,
   type Player,
   type ScoreResult,

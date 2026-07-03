@@ -16,7 +16,7 @@ export const lastCardRules: RulesSection[] = [
   {
     heading: 'Setup',
     body: [
-      'Each player is dealt 7 cards from a standard 52-card deck.',
+      'Each player is dealt 7 cards from a 54-card deck (standard 52 plus 2 jokers).',
       'The top of the remaining deck is turned over to start the discard pile.',
     ],
   },
@@ -24,22 +24,26 @@ export const lastCardRules: RulesSection[] = [
     heading: 'Your turn',
     body: [
       'Play a card matching the discard pile by suit or by rank.',
-      'If you cannot play, draw a card. If it still cannot be played, your turn ends.',
+      'Holding two or more of the same rank? You can play them all together in one turn.',
+      'If you cannot play, draw one card and your turn ends.',
+      'You cannot win on an action card — your final card must be a plain one.',
     ],
   },
   {
     heading: 'Action cards',
     body: [
-      '2 — the next player picks up 2 cards (these can stack).',
-      '8 — skips the next player.',
+      '2 — the next player picks up 2 (these stack).',
+      'Joker — the next player picks up 5. A Joker can stack onto a pending 2 (2 + 5 = 7), but a 2 cannot stack onto a Joker.',
+      '7 — skips the next player.',
+      '8 — reverses the direction of play.',
       'Jack — change the suit to one of your choosing.',
     ],
   },
   {
     heading: 'Last Card!',
     body: [
-      'When you play down to one card, you must declare “Last Card”.',
-      'Forget, and you pick up a 2-card penalty.',
+      'When you play down to your last card (or your last same-rank group), you must call “Last Card”.',
+      'The game prompts you on your turn — call it, or stay quiet and risk a 2-card penalty if you are caught.',
     ],
   },
 ]
