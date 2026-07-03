@@ -74,7 +74,8 @@ export const lastCardTutorial: TutorialStep[] = [
   {
     target: '[data-tour="last-card"]',
     title: 'Call Last Card',
-    content: 'Down to one card? Declare “Last Card” or risk a penalty!',
+    content:
+      'When a play leaves you on your last card (or last same-rank group), the game asks — on your turn — to call “Last Card”. Call it, or stay quiet and risk a penalty.',
   },
 ]
 
@@ -139,6 +140,7 @@ export const lastCardTutorialSw: TutorialStep[] = [
   {
     target: '[data-tour="last-card"]',
     title: 'Lia Kadi',
-    content: 'Umebaki na karata moja? Tangaza "Lia Kadi" au uhatarishe adhabu!',
+    content:
+      'Uchezaji ukikuachia karata yako ya mwisho (au kundi la mwisho la daraja moja), mchezo utakuuliza — kwenye zamu yako — ulie "Lia Kadi". Itangaze, au nyamaza uhatarishe adhabu.',
   },
 ]

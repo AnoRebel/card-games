@@ -514,7 +514,7 @@ async function draw() {
     </div>
 
     <!-- Your hand, with a live card count -->
-    <div class="flex items-center justify-center gap-1.5 text-xs font-medium" :style="{ color: 'var(--cg-text-muted)' }">
+    <div class="flex items-center justify-center gap-1.5 text-xs font-medium" :style="{ color: 'var(--cg-text-muted)' }" data-tour="last-card">
       <UIcon name="i-lucide-layers" />
       {{ $t('game.cardsInHand', { count: myHand.length }) }}
     </div>
