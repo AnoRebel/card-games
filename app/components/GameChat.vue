@@ -111,7 +111,7 @@ function time(iso: string) {
             variant="ghost"
             color="neutral"
             icon="i-lucide-minus"
-            title="Minimize"
+            :title="$t('chat.minimize')"
             @click="open = false"
           />
         </div>
@@ -134,7 +134,7 @@ function time(iso: string) {
           @submit.prevent="send"
         >
           <UInput v-model="draft" :placeholder="$t('chat.placeholder')" size="sm" class="flex-1" :maxlength="500" />
-          <UButton type="submit" size="sm" icon="i-lucide-send" :disabled="!draft.trim()" title="Send" />
+          <UButton type="submit" size="sm" icon="i-lucide-send" :disabled="!draft.trim()" :title="$t('chat.send')" />
         </form>
 
         <!-- visible resize affordance (the panel itself is CSS-resizable) -->

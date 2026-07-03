@@ -69,7 +69,16 @@
     "noPublicRooms": "Hakuna vyumba vya wazi kwa sasa. Unda kimoja kuanza!",
     "phaseLobby": "Chumbani",
     "phaseInProgress": "Inachezwa",
-    "phaseFinished": "Imemalizika"
+    "phaseFinished": "Imemalizika",
+    "tapToSetUp": "Gusa kuandaa mchezo",
+    "unknownGame": "Mchezo usiojulikana",
+    "unknownGameDesc": "Hakuna mchezo uliosajiliwa wenye kitambulisho “{id}”.",
+    "privateRoom": "Chumba cha faragha",
+    "privateRoomJoin": "Chumba hiki ni cha faragha. Weka nenosiri ili kujiunga.",
+    "privateRoomWatch": "Chumba hiki ni cha faragha. Weka nenosiri ili kutazama.",
+    "passcode": "Nenosiri",
+    "couldNotCreate": "Imeshindwa kuunda chumba: {error}",
+    "enterRoomOrId": "Weka kiungo au kitambulisho cha chumba ili kujiunga."
   },
   "game": {
     "yourTurn": "Zamu yako",
@@ -125,18 +134,35 @@
     "scoredPenalty": "Imepangwa kwa pointi chache za adhabu",
     "rematch": "Rudia mchezo",
     "newGame": "Mchezo mpya",
-    "exit": "Toka"
+    "exit": "Toka",
+    "waitingToStart": "Kusubiri mchezo uanze…",
+    "eatenCards": "karata zilizoliwa",
+    "yourEatenCards": "Karata zako zilizoliwa",
+    "noCardsEaten": "Hakuna karata zilizoliwa bado.",
+    "cardsEaten": "{count} zimeliwa",
+    "topCard": "Juu: {card}"
+  },
+  "home": {
+    "badge": "nje ya mtandao · mtandaoni · wakati halisi",
+    "taglineLastCard": "Maliza karata zako kwanza — angalia karata za kitendo, na lie kadi yako ya mwisho!",
+    "taglineAlbastini": "Kuchukua mikono kwa Mchezo, kuotea, na Jike (7) hodari."
   },
   "chat": {
     "title": "Gumzo",
     "placeholder": "Ujumbe…",
-    "empty": "Hakuna ujumbe bado."
+    "empty": "Hakuna ujumbe bado.",
+    "minimize": "Punguza",
+    "send": "Tuma"
   },
   "leaderboard": {
     "title": "Ubao wa Washindi",
     "empty": "Hakuna michezo iliyorekodiwa bado. Cheza mchezo ili uonekane hapa!",
     "played": "{count} zimechezwa",
-    "wins": "{count}U"
+    "wins": "{count}U",
+    "scopeAll": "Zote",
+    "scopePublic": "Wazi",
+    "scopePrivate": "Faragha",
+    "scopeOffline": "Nje ya mtandao"
   },
   "tutorial": {
     "offerTitle": "Mgeni hapa?",

@@ -260,7 +260,7 @@ async function passBid() {
   <div v-if="!hasState" class="cg-surface rounded-2xl p-10 text-center space-y-2">
     <UIcon name="i-lucide-loader-circle" class="animate-spin text-2xl" />
     <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-      Waiting for the game to start…
+      {{ $t('game.waitingToStart') }}
     </p>
   </div>
 
@@ -272,7 +272,9 @@ async function passBid() {
         :key="opp.seat"
         :ref="(n) => setOppEl(opp.seat, n as Element | null)"
         type="button"
-        :title="`${opp.name} — ${eaten(opp.seat).length} cards eaten`"
+        :title="`${opp.name} — ${$t('game.cardsEaten', { count: eaten(opp.seat).length })}`"
+        :aria-label="`${opp.name}: ${$t('game.cardsInHand', { count: handSize(opp.seat) })}, ${$t('game.cardsEaten', { count: eaten(opp.seat).length })}${ab.activeSeat === opp.seat ? ` — ${$t('game.yourTurn')}` : ''}`"
+        :aria-current="ab.activeSeat === opp.seat ? 'true' : undefined"
         class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition"
         :style="{
           background: 'var(--cg-surface)',
@@ -288,7 +290,7 @@ async function passBid() {
         <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="$t('game.cardsInHand', { count: handSize(opp.seat) })">
           <UIcon name="i-lucide-layers" /> {{ handSize(opp.seat) }}
         </span>
-        <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="`${eaten(opp.seat).length} eaten`">
+        <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="$t('game.cardsEaten', { count: eaten(opp.seat).length })">
           <UIcon name="i-lucide-utensils" /> {{ eaten(opp.seat).length }}
         </span>
       </button>
@@ -373,7 +375,7 @@ async function passBid() {
       @click="showEaten = viewerSeat"
     >
       <span class="flex items-center gap-1.5">
-        <UIcon name="i-lucide-utensils" /> Your eaten cards
+        <UIcon name="i-lucide-utensils" /> {{ $t('game.yourEatenCards') }}
       </span>
       <span class="flex -space-x-4">
         <PlayingCard
@@ -391,12 +393,12 @@ async function passBid() {
     <MoveLogSlideover :entries="log.entries.value" />
 
     <!-- Eaten-cards viewer -->
-    <UModal v-model:open="eatenModalOpen" :title="`${players.find((p) => p.seat === showEaten)?.name ?? ''} — eaten cards`" :ui="modalUi">
+    <UModal v-model:open="eatenModalOpen" :title="`${players.find((p) => p.seat === showEaten)?.name ?? ''} — ${$t('game.eatenCards')}`" :ui="modalUi">
       <template #body>
         <div v-if="showEaten !== null" class="flex flex-wrap gap-1.5 justify-center">
           <PlayingCard v-for="(c, i) in eaten(showEaten)" :key="i" :card="c" :width="52" />
           <p v-if="!eaten(showEaten).length" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            No cards eaten yet.
+            {{ $t('game.noCardsEaten') }}
           </p>
         </div>
       </template>

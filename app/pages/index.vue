@@ -4,11 +4,11 @@ import { standardDeck } from '@card-games/engine-core'
 const { $t } = useI18n()
 useHead({ title: () => $t('app.title') })
 
-const games = [
+const games = computed(() => [
   {
     id: 'last-card',
     name: 'Last Card',
-    tagline: 'Shed your hand first — mind the action cards, and call your last!',
+    tagline: $t('home.taglineLastCard'),
     players: '2–6',
     to: '/play/last-card',
     font: 'font-last-card',
@@ -22,7 +22,7 @@ const games = [
   {
     id: 'albastini',
     name: 'Albastini',
-    tagline: 'Trick-taking with trumps, otea bidding and the mighty Jike (7).',
+    tagline: $t('home.taglineAlbastini'),
     players: '2·3·4·6',
     to: '/play/albastini',
     font: 'font-albastini italic',
@@ -33,7 +33,7 @@ const games = [
       { rank: 13 as const, suit: 's' as const },
     ],
   },
-]
+])
 
 const root = ref<HTMLElement | null>(null)
 onMounted(() => {
@@ -52,7 +52,7 @@ void standardDeck
         class="text-xs font-semibold uppercase tracking-[0.2em] mb-2"
         :style="{ color: 'var(--cg-accent)' }"
       >
-        offline · online · realtime
+        {{ $t('home.badge') }}
       </p>
       <h1
         class="font-display text-4xl sm:text-6xl font-extrabold tracking-tight leading-[0.95]"

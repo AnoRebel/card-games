@@ -183,7 +183,7 @@ async function createOnlineRoom(customId?: string) {
     // Reflect the room in the URL so it can be shared.
     router.replace({ query: { ...route.query, room: res.roomId } })
   } catch (e) {
-    banner.value = { type: 'error', text: `Could not create room: ${String(e)}` }
+    banner.value = { type: 'error', text: $t('lobby.couldNotCreate', { error: String(e) }) }
   } finally {
     creating.value = false
     loading.finish()
@@ -251,7 +251,7 @@ function joinByInput(asSpectator: boolean) {
     }
   }
   if (!roomId) {
-    banner.value = { type: 'error', text: 'Enter a room link or id to join.' }
+    banner.value = { type: 'error', text: $t('lobby.enterRoomOrId') }
     return
   }
   if (code) createdPasscode.value = code
@@ -423,7 +423,7 @@ const spectatorShareUrl = computed(() => {
         <p class="text-3xl mb-1">🃏</p>
         <p class="font-display font-bold text-lg">{{ $t('common.play') }} {{ title }}</p>
         <p class="text-xs mt-1" :style="{ color: 'var(--cg-text-muted)' }">
-          Tap to set up a game
+          {{ $t('lobby.tapToSetUp') }}
         </p>
       </button>
       <!-- Join an existing online game by link, or room id + code -->
@@ -494,8 +494,8 @@ const spectatorShareUrl = computed(() => {
       v-else
       color="error"
       variant="subtle"
-      title="Unknown game"
-      :description="`No game registered with id “${gameId}”.`"
+      :title="$t('lobby.unknownGame')"
+      :description="$t('lobby.unknownGameDesc', { id: gameId })"
     />
 
     <GameSetupModal
@@ -511,19 +511,18 @@ const spectatorShareUrl = computed(() => {
     <!-- Passcode prompt for a private (locked) room -->
     <UModal
       :open="codePrompt !== null"
-      title="Private room"
+      :title="$t('lobby.privateRoom')"
       :ui="codeModalUi"
       @update:open="(o: boolean) => { if (!o) codePrompt = null }"
     >
       <template #body>
         <form class="space-y-3" @submit.prevent="submitCode">
           <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            This room is private. Enter the passcode to
-            {{ codePrompt?.spectate ? 'watch' : 'join' }}.
+            {{ codePrompt?.spectate ? $t('lobby.privateRoomWatch') : $t('lobby.privateRoomJoin') }}
           </p>
           <UInput
             v-model="codeInput"
-            placeholder="Passcode"
+            :placeholder="$t('lobby.passcode')"
             autofocus
             size="lg"
           />

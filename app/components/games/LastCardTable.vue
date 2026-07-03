@@ -3,7 +3,7 @@
  * Last Card table — themed felt, gesture (swipe-up to play) + tap, anime.js
  * deal/flip/celebrate, suit chooser, move log, restart.
  */
-import { cardId, cardShort, type Card, type Suit } from '@card-games/engine-core'
+import { cardId, cardName, cardShort, type Card, type Suit } from '@card-games/engine-core'
 import type {
   LastCardMove,
   LastCardState,
@@ -400,7 +400,7 @@ async function draw() {
   <div v-if="!hasState" class="cg-surface rounded-2xl p-10 text-center space-y-2">
     <UIcon name="i-lucide-loader-circle" class="animate-spin text-2xl" />
     <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-      Waiting for the game to start…
+      {{ $t('game.waitingToStart') }}
     </p>
   </div>
 
@@ -412,6 +412,8 @@ async function draw() {
         :key="opp.seat"
         :ref="(n) => setOppEl(opp.seat, n as Element | null)"
         :title="`${opp.name} — ${handSize(opp.seat)} cards`"
+        :aria-label="`${opp.name}: ${$t('game.cardsInHand', { count: handSize(opp.seat) })}${lc.activeSeat === opp.seat ? ` — ${$t('game.yourTurn')}` : ''}`"
+        :aria-current="lc.activeSeat === opp.seat ? 'true' : undefined"
         class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition"
         :class="lc.activeSeat === opp.seat ? 'cg-glow' : ''"
         :style="{
@@ -578,7 +580,8 @@ async function draw() {
               type="button"
               class="rounded-xl p-1 transition hover:-translate-y-1"
               :style="{ border: '2px solid var(--cg-border)' }"
-              :title="`Top: ${topOf(b)?.rank}${suitSymOf(topOf(b)?.suit ?? '')}`"
+              :title="$t('game.topCard', { card: `${topOf(b)?.rank}${suitSymOf(topOf(b)?.suit ?? '')}` })"
+              :aria-label="$t('game.topCard', { card: topOf(b) ? cardName(topOf(b)!) : '' })"
               @click="chooseTop(b)"
             >
               <PlayingCard v-if="topOf(b)" :card="topOf(b)!" :width="64" />

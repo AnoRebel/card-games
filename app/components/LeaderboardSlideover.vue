@@ -16,11 +16,12 @@ const { rows } = useLeaderboard(
 const modalUi = useThemedModalUi()
 const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
 
-const scopes: { id: LeaderboardScope; label: string; icon: string }[] = [
-  { id: 'all', label: 'All', icon: 'i-lucide-list' },
-  { id: 'public', label: 'Public', icon: 'i-lucide-globe' },
-  { id: 'private', label: 'Private', icon: 'i-lucide-lock' },
-  { id: 'offline', label: 'Offline', icon: 'i-lucide-monitor' },
+// `labelKey` resolves via $t in the template so scope labels follow the locale.
+const scopes: { id: LeaderboardScope; labelKey: string; icon: string }[] = [
+  { id: 'all', labelKey: 'leaderboard.scopeAll', icon: 'i-lucide-list' },
+  { id: 'public', labelKey: 'leaderboard.scopePublic', icon: 'i-lucide-globe' },
+  { id: 'private', labelKey: 'leaderboard.scopePrivate', icon: 'i-lucide-lock' },
+  { id: 'offline', labelKey: 'leaderboard.scopeOffline', icon: 'i-lucide-monitor' },
 ]
 </script>
 
@@ -39,7 +40,7 @@ const scopes: { id: LeaderboardScope; label: string; icon: string }[] = [
             class="flex-1 justify-center"
             @click="scope = s.id"
           >
-            {{ s.label }}
+            {{ $t(s.labelKey) }}
           </UButton>
         </UFieldGroup>
 

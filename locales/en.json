@@ -69,7 +69,16 @@
     "noPublicRooms": "No public rooms right now. Create one to get started!",
     "phaseLobby": "In lobby",
     "phaseInProgress": "Playing",
-    "phaseFinished": "Finished"
+    "phaseFinished": "Finished",
+    "tapToSetUp": "Tap to set up a game",
+    "unknownGame": "Unknown game",
+    "unknownGameDesc": "No game registered with id “{id}”.",
+    "privateRoom": "Private room",
+    "privateRoomJoin": "This room is private. Enter the passcode to join.",
+    "privateRoomWatch": "This room is private. Enter the passcode to watch.",
+    "passcode": "Passcode",
+    "couldNotCreate": "Could not create room: {error}",
+    "enterRoomOrId": "Enter a room link or id to join."
   },
   "game": {
     "yourTurn": "Your turn",
@@ -125,18 +134,35 @@
     "scoredPenalty": "Ranked by fewest penalty points",
     "rematch": "Rematch",
     "newGame": "New game",
-    "exit": "Exit"
+    "exit": "Exit",
+    "waitingToStart": "Waiting for the game to start…",
+    "eatenCards": "eaten cards",
+    "yourEatenCards": "Your eaten cards",
+    "noCardsEaten": "No cards eaten yet.",
+    "cardsEaten": "{count} eaten",
+    "topCard": "Top: {card}"
+  },
+  "home": {
+    "badge": "offline · online · realtime",
+    "taglineLastCard": "Shed your hand first — mind the action cards, and call your last!",
+    "taglineAlbastini": "Trick-taking with trumps, otea bidding and the mighty Jike (7)."
   },
   "chat": {
     "title": "Chat",
     "placeholder": "Message…",
-    "empty": "No messages yet."
+    "empty": "No messages yet.",
+    "minimize": "Minimize",
+    "send": "Send"
   },
   "leaderboard": {
     "title": "Leaderboard",
     "empty": "No games recorded yet. Play a match to appear here!",
     "played": "{count} played",
-    "wins": "{count}W"
+    "wins": "{count}W",
+    "scopeAll": "All",
+    "scopePublic": "Public",
+    "scopePrivate": "Private",
+    "scopeOffline": "Offline"
   },
   "tutorial": {
     "offerTitle": "New here?",
