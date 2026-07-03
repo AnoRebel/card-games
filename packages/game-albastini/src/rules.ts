@@ -343,20 +343,26 @@ function finalizeHand(state: AlbastiniState): void {
   const max = Math.max(...unitScore.map((u) => u.points))
   const topUnits = unitScore.filter((u) => u.points === max)
 
-  // Ties → no victory points.
+  // The winner of the hand (or a member of the winning unit) deals next; on a
+  // tie the same player re-deals. The winning unit's dealer is its top scorer.
+  let nextDealer = state.dealer
   if (topUnits.length === 1) {
     const winner = topUnits[0]!
     const vp = victoryPointsFor(state, unitScore)
     for (const seat of winner.seats) {
       state.victoryPoints[seat] = (state.victoryPoints[seat] ?? 0) + vp
     }
+    nextDealer = winner.seats.reduce(
+      (best, seat) => (takenPoints(state, seat) > takenPoints(state, best) ? seat : best),
+      winner.seats[0]!,
+    )
   }
 
   if (state.hand + 1 >= state.config.hands) {
     state.phase = 'finished'
     state.activeSeat = null
   } else {
-    startNextHand(state)
+    startNextHand(state, nextDealer)
   }
 }
 
@@ -378,8 +384,8 @@ function victoryPointsFor(
   return min >= 30 ? 1 : 2
 }
 
-/** Deal a fresh hand, rotating the dealer. */
-function startNextHand(state: AlbastiniState): void {
+/** Deal a fresh hand. `dealer` is the hand winner (or same seat after a tie). */
+function startNextHand(state: AlbastiniState, dealer: Seat): void {
   const count = state.players.length
   const reseed = createRng(state.rng.seed ^ (state.hand + 1))
   const shuffled = shuffle(deckWithout(STRIPPED_RANKS), reseed)
@@ -400,7 +406,7 @@ function startNextHand(state: AlbastiniState): void {
   state.currentTrick = []
   state.ledSuit = null
   state.hand += 1
-  state.dealer = nextSeat(state.dealer, count, 1)
+  state.dealer = dealer
   state.phase = state.config.enableBidding ? 'bidding' : 'playing'
   state.activeSeat = rightOf(state.dealer, count)
   if (!state.config.enableBidding) revealTrump(state)

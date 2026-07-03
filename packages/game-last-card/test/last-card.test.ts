@@ -296,6 +296,56 @@ describe('Last Card — last card call & penalty', () => {
     applyMove(lastCardGame, s, { type: 'draw', seat: 1 } as LastCardMove)
     expect(handCount(s, 0)).toBe(before) // no penalty
   })
+
+  it('missed-call penalty reshuffles the discard when the draw pile is empty', () => {
+    let s = init()
+    // Draw pile empty; a fat discard pile is available to reshuffle from.
+    s = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      drawPile: [],
+      discardPile: [
+        { rank: 3, suit: 'c' }, { rank: 4, suit: 'c' }, { rank: 6, suit: 'c' },
+        { rank: 3, suit: 'd' }, { rank: 4, suit: 'd' }, { rank: 5, suit: 'h' },
+      ],
+      hands: { 0: [{ rank: 4, suit: 'h' }, { rank: 9, suit: 'h' }], 1: [{ rank: 6, suit: 'h' }], 2: [{ rank: 7, suit: 'h' }] },
+    }
+    // Seat 0 plays plain → awaitingCall (undeclared last-group).
+    s = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: { rank: 4, suit: 'h' } } as LastCardMove).state
+    expect(s.awaitingCall).toBe(0)
+    const before = handCount(s, 0)
+    // Seat 1 acts → the window closes → +2 penalty drawn (via reshuffle).
+    s = applyMove(lastCardGame, s, { type: 'play', seat: 1, card: { rank: 6, suit: 'h' } } as LastCardMove).state
+    expect(s.awaitingCall).toBeNull()
+    expect(handCount(s, 0)).toBe(before + 2)
+  })
+
+  it('missed-call penalty draws only what exists when the stock is exhausted (no crash)', () => {
+    let s = init()
+    // Draw pile empty; discard has a single card so a reshuffle yields nothing.
+    // Seat 1 has no playable card (only an off-suit non-matching card) so their
+    // move is a DRAW — which adds NOTHING to the discard, keeping it exhausted.
+    s = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      drawPile: [],
+      discardPile: [{ rank: 5, suit: 'h' }],
+      hands: { 0: [{ rank: 4, suit: 'h' }, { rank: 9, suit: 'h' }], 1: [{ rank: 6, suit: 'c' }], 2: [{ rank: 7, suit: 's' }] },
+    }
+    s = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: { rank: 4, suit: 'h' } } as LastCardMove).state
+    expect(s.awaitingCall).toBe(0)
+    const before = handCount(s, 0)
+    // Seat 1's only move is to draw (no legal play, empty stock). The window
+    // closes → penalty attempted, but nothing exists to draw → 0 extra cards,
+    // window still clears, no crash.
+    const r = applyMove(lastCardGame, s, { type: 'draw', seat: 1 } as LastCardMove)
+    expect(r.ok).toBe(true)
+    s = r.state
+    expect(s.awaitingCall).toBeNull()
+    expect(handCount(s, 0)).toBe(before) // nothing to conjure
+  })
 })
 
 describe('Last Card — multi same-rank plays', () => {

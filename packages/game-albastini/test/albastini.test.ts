@@ -318,3 +318,40 @@ describe('Albastini — point conservation (trump card stays in play)', () => {
     }
   })
 })
+
+describe('Albastini — dealer follows the hand winner', () => {
+  // The deal is deterministic per seed, so hand 1 plays identically in a 1-hand
+  // and a 2-hand game (same seed, same first-legal-move policy). Run the 1-hand
+  // game to read hand 1's final scores, then run the 2-hand game just past hand
+  // 1 and assert its new dealer is that hand's sole winner (or unchanged on tie).
+  const playToHand1End = (hands: number, seed: string) => {
+    let s = init(seed, { enableBidding: false, hands })
+    for (let i = 0; i < 500 && s.hand === 0 && s.phase !== 'finished'; i++) {
+      const moves = albastiniGame.getLegalMoves(s, s.activeSeat!)
+      if (!moves.length) break
+      s = applyMove(albastiniGame, s, moves[0]!).state
+    }
+    return s
+  }
+
+  for (const seed of ['dr-a', 'dr-b', 'dr-c', 'dr-d', 'dr-e']) {
+    it(`seed=${seed}: next dealer is hand 1's winner (or unchanged on a tie)`, () => {
+      const dealer0 = init(seed, { enableBidding: false, hands: 2 }).dealer
+      const oneHand = playToHand1End(1, seed) // finishes hand 1
+      const pts = players4.map((p) => ({
+        seat: p.seat,
+        points: (oneHand.taken[p.seat] ?? []).reduce((a, c) => a + pointValue(c.rank), 0),
+      }))
+      const max = Math.max(...pts.map((x) => x.points))
+      const top = pts.filter((x) => x.points === max).map((x) => x.seat)
+
+      const twoHand = playToHand1End(2, seed) // now dealing hand 2
+      expect(twoHand.hand).toBe(1)
+      if (top.length === 1) {
+        expect(twoHand.dealer).toBe(top[0]) // sole winner deals next
+      } else {
+        expect(twoHand.dealer).toBe(dealer0) // tie → same dealer re-deals
+      }
+    })
+  }
+})

@@ -513,6 +513,13 @@ function stepSeat(
 /**
  * If a previous seat was awaiting a "Last Card" declaration and the window has
  * now closed (a different seat is acting), apply the missed-call penalty.
+ *
+ * The penalty draws `missedCallPenalty` cards, reshuffling the discard pile into
+ * an empty draw pile as needed. If the whole stock is exhausted (draw pile empty
+ * AND the discard has no cards to reshuffle), we draw as many as physically
+ * exist and stop — you can't conjure cards. The window is closed regardless
+ * (`awaitingCall` cleared): a missed call is judged at the moment it closes, so
+ * an unpayable remainder is simply forgiven rather than carried forward.
  */
 function applyMissedCall(state: LastCardState, actingSeat: Seat): void {
   if (state.awaitingCall === null) return
@@ -524,7 +531,7 @@ function applyMissedCall(state: LastCardState, actingSeat: Seat): void {
       state.drawPile = refilled.drawPile
       state.discardPile = refilled.discardPile
       state.rng = refilled.rng
-      if (state.drawPile.length === 0) break
+      if (state.drawPile.length === 0) break // stock fully exhausted — draw no more
     }
     const card = state.drawPile.pop()
     if (card) state.hands[offender]!.push(card)
