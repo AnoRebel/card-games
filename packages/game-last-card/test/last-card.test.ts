@@ -3,6 +3,7 @@ import {
   applyMove,
   replay,
   joker,
+  cardId,
   type Card,
   type Player,
   type Seat,
@@ -450,6 +451,49 @@ describe('Last Card — multi same-rank plays', () => {
     )
     expect(topSuits.size).toBe(2)
     expect(topSuits.has('h')).toBe(false) // ♥ can't be left on top (only legal lead)
+  })
+
+  it('a triplet reaching a last-group emits plain+declare per top-suit (UI must dedupe)', () => {
+    // Regression for the "Which card on top?" chooser showing DUPLICATE options
+    // (e.g. Q♥,Q♥,Q♣,Q♣). Playing all 3 queens here leaves one card → a
+    // last-group → getLegalMoves emits BOTH a plain and a declareLastCard bundle
+    // per feasible top-suit. The UI keeps only the plain variant per top card.
+    let s = init()
+    s = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 's',
+      discardPile: [{ rank: 11, suit: 's' }], // J♠ demand
+      hands: {
+        0: [{ rank: 12, suit: 'h' }, { rank: 12, suit: 's' }, { rank: 12, suit: 'c' }, { rank: 10, suit: 'd' }],
+        1: [{ rank: 5, suit: 'h' }],
+        2: [{ rank: 6, suit: 'h' }],
+      },
+    }
+    const qBundles = lastCardGame
+      .getLegalMoves(s, 0)
+      .filter((m) => m.type === 'play' && m.card.rank === 12 && (m.extraCards?.length ?? 0) > 0)
+    // Raw: 2 top-suits × {plain, declare} = 4 (the source of the visual dupes).
+    expect(qBundles.length).toBe(4)
+    // Dedupe as the UI does: plain-only, unique by TOP card → 2 clean options.
+    const seen = new Set<string>()
+    const uiOptions = qBundles.filter((m) => {
+      if (m.type !== 'play' || m.declareLastCard) return false
+      const cards = [m.card, ...(m.extraCards ?? [])]
+      const top = cardId(cards[cards.length - 1]!)
+      if (seen.has(top)) return false
+      seen.add(top)
+      return true
+    })
+    expect(uiOptions.length).toBe(2)
+    // Every de-duped option applies, and none leaves ♠ on top (Q♠ is the only
+    // legal lead, so it can't also be last).
+    for (const m of uiOptions) expect(applyMove(lastCardGame, s, m).ok).toBe(true)
+    const tops = uiOptions.map((m) => {
+      const cards = [m.card, ...((m as { extraCards?: Card[] }).extraCards ?? [])]
+      return cards[cards.length - 1]!.suit
+    })
+    expect(new Set(tops)).toEqual(new Set(['h', 'c']))
   })
 
   it('a triplet that empties the hand wins the round', () => {

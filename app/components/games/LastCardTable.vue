@@ -348,8 +348,22 @@ async function playCardMove(card: Card) {
     return
   }
 
-  const bundles = plays.filter((m) => m.type === 'play' && (m.extraCards?.length ?? 0) > 0)
-  const single = plays.find((m) => m.type === 'play' && !(m.extraCards?.length))
+  // Bundle options for the "which card on top?" chooser. getLegalMoves emits a
+  // plain AND a declareLastCard variant of each bundle when the play reaches a
+  // last-group — keep only ONE per distinct top card (the declare-vs-quiet choice
+  // is handled afterwards by the Call prompt in commitPlay), so the chooser never
+  // shows duplicate top-suit options.
+  const seenTop = new Set<string>()
+  const bundles = plays.filter((m) => {
+    if (m.type !== 'play' || (m.extraCards?.length ?? 0) === 0) return false
+    if (m.declareLastCard) return false // dedupe: prefer the plain variant
+    const top = topOf(m)
+    const key = top ? cardId(top) : ''
+    if (seenTop.has(key)) return false
+    seenTop.add(key)
+    return true
+  })
+  const single = plays.find((m) => m.type === 'play' && !(m.extraCards?.length) && !m.declareLastCard)
   if (bundles.length && single) {
     pendingMulti.value = { card, single, bundles }
     return
