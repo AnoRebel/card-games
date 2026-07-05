@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { standardDeck } from '@card-games/engine-core'
 
-const { $t } = useI18n()
+const { $t, $localePath } = useI18n()
 useHead({ title: () => $t('app.title') })
 
 const games = computed(() => [
@@ -68,7 +68,7 @@ void standardDeck
       <NuxtLink
         v-for="game in games"
         :key="game.id"
-        :to="game.to"
+        :to="$localePath(game.to)"
         data-reveal
         class="cg-game-card group relative overflow-hidden rounded-2xl p-5 cg-surface transition-transform"
       >
@@ -108,7 +108,7 @@ void standardDeck
     </section>
 
     <section data-reveal class="flex justify-center pb-4">
-      <UButton to="/rooms" variant="soft" color="neutral" size="lg" icon="i-lucide-radio">
+      <UButton :to="$localePath('/rooms')" variant="soft" color="neutral" size="lg" icon="i-lucide-radio">
         {{ $t('lobby.browseRooms') }}
       </UButton>
     </section>

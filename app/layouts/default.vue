@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { $t, $switchLocale, $getLocales, $getLocale } = useI18n()
+const { $t, $switchLocale, $getLocales, $getLocale, $localePath } = useI18n()
 const { isDark, toggle } = useThemeMode()
 const settings = useSettingsPanel()
 
@@ -21,7 +21,7 @@ const locales = computed(() => $getLocales())
     >
       <nav class="mx-auto max-w-5xl px-3 h-12 flex items-center justify-between gap-2">
         <NuxtLink
-          to="/"
+          :to="$localePath('/')"
           class="font-display font-bold tracking-tight inline-flex items-center gap-1.5"
         >
           <span class="text-lg leading-none">🂡</span>

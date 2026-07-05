@@ -43,11 +43,12 @@ const phaseLabel = (p: PublicRoomInfo['phase']) =>
       : $t('lobby.phaseFinished')
 
 const router = useRouter()
+const { $localePath } = useI18n()
 function spectate(r: PublicRoomInfo) {
-  router.push({ path: `/play/${r.gameId}`, query: { room: r.id, spectate: '1' } })
+  router.push({ path: $localePath(`/play/${r.gameId}`), query: { room: r.id, spectate: '1' } })
 }
 function joinSeat(r: PublicRoomInfo) {
-  router.push({ path: `/play/${r.gameId}`, query: { room: r.id } })
+  router.push({ path: $localePath(`/play/${r.gameId}`), query: { room: r.id } })
 }
 const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPlayers
 </script>
@@ -56,7 +57,7 @@ const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPl
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <UButton to="/" variant="ghost" color="neutral" size="sm" icon="i-lucide-arrow-left" square />
+        <UButton :to="$localePath('/')" variant="ghost" color="neutral" size="sm" icon="i-lucide-arrow-left" square />
         <h1 class="text-xl font-bold flex items-center gap-2">
           <UIcon name="i-lucide-radio" :style="{ color: 'var(--cg-accent)' }" />
           {{ $t('lobby.browseRooms') }}

@@ -9,7 +9,7 @@ import { WsTransport } from '~/transports/WsTransport'
 
 const route = useRoute()
 const router = useRouter()
-const { $t } = useI18n()
+const { $t, $localePath } = useI18n()
 const gameId = computed(() => String(route.params.game))
 
 const meta = computed(() => getGame(gameId.value)?.meta ?? null)
@@ -314,7 +314,7 @@ const spectatorShareUrl = computed(() => {
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
         <UButton
-          to="/"
+          :to="$localePath('/')"
           variant="ghost"
           color="neutral"
           size="sm"
@@ -476,7 +476,7 @@ const spectatorShareUrl = computed(() => {
       </div>
 
       <div class="flex flex-wrap justify-center gap-2">
-        <UButton variant="soft" color="neutral" icon="i-lucide-radio" to="/rooms">
+        <UButton variant="soft" color="neutral" icon="i-lucide-radio" :to="$localePath('/rooms')">
           {{ $t('lobby.browseRooms') }}
         </UButton>
         <UButton
