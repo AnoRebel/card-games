@@ -64,7 +64,9 @@
     "startGame": "Anza mchezo",
     "needPlayers": "Unahitaji angalau wachezaji {min}",
     "endGame": "Maliza mchezo",
-    "waitingForHost": "Kumsubiri mwenyeji…"
+    "waitingForHost": "Kumsubiri mwenyeji…",
+    "reconnecting": "Inaunganisha upya…",
+    "reconnectingBody": "Muunganisho umekatika — tunajaribu kurudi. Kiti chako kimehifadhiwa."
   },
   "lobby": {
     "playOffline": "Cheza nje ya mtandao",

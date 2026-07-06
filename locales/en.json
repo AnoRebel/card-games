@@ -64,7 +64,9 @@
     "startGame": "Start the game",
     "needPlayers": "Need at least {min} players",
     "endGame": "End the game",
-    "waitingForHost": "Waiting for host…"
+    "waitingForHost": "Waiting for host…",
+    "reconnecting": "Reconnecting…",
+    "reconnectingBody": "Connection lost — trying to rejoin. Your seat is held."
   },
   "lobby": {
     "playOffline": "Play offline",

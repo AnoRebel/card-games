@@ -71,6 +71,9 @@ type ServerMsg =
   | { t: 'chat'; messages: ChatMessage[] }
   | { t: 'error'; message: string }
 
+/** Socket lifecycle exposed to the UI for a connection banner. */
+export type ConnectionState = 'connecting' | 'connected' | 'reconnecting' | 'closed'
+
 export interface WsTransportOptions {
   roomId: string
   playerId: string
@@ -115,9 +118,24 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
   private chatCbs = new Set<(m: ChatMessage[]) => void>()
   private deniedCb?: (reason: string) => void
   private errorCb?: (msg: string) => void
+  private connectionCbs = new Set<(s: ConnectionState) => void>()
+
+  // Reconnection state. The server keeps a dropped seated player's seat alive
+  // for a grace window (PLAYER_GRACE_MS) and reclaims by playerId on re-join, so
+  // a transient drop (wifi blip, sleep) recovers if we reconnect fast enough.
+  private connectionState: ConnectionState = 'connecting'
+  private closedByUs = false
+  private reconnectAttempts = 0
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  private onOnline = () => this.reconnectNow()
+  private onVisible = () => { if (!document.hidden) this.reconnectNow() }
 
   constructor(opts: WsTransportOptions) {
     this.opts = opts
+    if (import.meta.client) {
+      window.addEventListener('online', this.onOnline)
+      document.addEventListener('visibilitychange', this.onVisible)
+    }
     this.connect()
   }
 
@@ -126,6 +144,20 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
   }
   onError(cb: (msg: string) => void) {
     this.errorCb = cb
+  }
+  /** Subscribe to connection lifecycle changes (for a "reconnecting" banner). */
+  onConnection(cb: (s: ConnectionState) => void) {
+    this.connectionCbs.add(cb)
+    cb(this.connectionState)
+    return () => this.connectionCbs.delete(cb)
+  }
+  getConnectionState(): ConnectionState {
+    return this.connectionState
+  }
+  private setConnection(s: ConnectionState) {
+    if (this.connectionState === s) return
+    this.connectionState = s
+    for (const cb of this.connectionCbs) cb(s)
   }
   get isHost() {
     return this.myClientId !== null && this.myClientId === this.hostClientId
@@ -138,9 +170,14 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
   }
 
   private connect() {
+    if (this.closedByUs) return
+    this.setConnection(this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting')
     const ws = new WebSocket(this.wsUrl())
     this.ws = ws
     ws.addEventListener('open', () => {
+      this.reconnectAttempts = 0
+      this.setConnection('connected')
+      // Re-send join on every (re)open; the server reclaims our seat by playerId.
       this.sendRaw({
         t: 'join',
         roomId: this.opts.roomId,
@@ -151,6 +188,38 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
       })
     })
     ws.addEventListener('message', (e) => this.onMessage(String(e.data)))
+    ws.addEventListener('close', () => this.scheduleReconnect())
+    ws.addEventListener('error', () => {
+      // 'error' is followed by 'close'; let close drive the retry. Close the
+      // socket to be safe (some browsers don't always fire close after error).
+      try { ws.close() } catch { /* already closing */ }
+    })
+  }
+
+  /** Reconnect with exponential backoff (capped), unless we closed on purpose. */
+  private scheduleReconnect() {
+    if (this.closedByUs || this.reconnectTimer) return
+    this.setConnection('reconnecting')
+    // 0.5s, 1s, 2s, 4s … capped at 8s, with a little jitter.
+    const base = Math.min(8000, 500 * 2 ** Math.min(this.reconnectAttempts, 4))
+    const delay = base + Math.floor((this.reconnectAttempts % 3) * 150)
+    this.reconnectAttempts++
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null
+      this.connect()
+    }, delay)
+  }
+
+  /** Force an immediate reconnect (e.g. network back online / tab visible). */
+  private reconnectNow() {
+    if (this.closedByUs) return
+    if (this.ws?.readyState === WebSocket.OPEN) return
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.reconnectAttempts = 0
+    this.connect()
   }
 
   private onMessage(raw: string) {
@@ -312,9 +381,21 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
   }
 
   destroy() {
+    this.closedByUs = true
+    this.setConnection('closed')
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    if (import.meta.client) {
+      window.removeEventListener('online', this.onOnline)
+      document.removeEventListener('visibilitychange', this.onVisible)
+    }
     this.sendRaw({ t: 'leave', roomId: this.opts.roomId })
     this.ws?.close()
     this.changeCbs.clear()
     this.chatCbs.clear()
+    this.connectionCbs.clear()
+    this.presenceCbs.clear()
   }
 }
