@@ -20,6 +20,8 @@ const { id: playerId, name: playerName } = usePlayerIdentity()
 
 const totalPlayers = ref(2)
 const humanCount = ref(1)
+// Rule-variant config chosen in the setup modal (null = engine defaults).
+const offlineConfig = ref<Record<string, unknown> | null>(null)
 watch(meta, (m) => {
   if (m) totalPlayers.value = m.supportedPlayerCounts[0] ?? 2
 }, { immediate: true })
@@ -48,9 +50,14 @@ onMounted(() => {
   }
 })
 
-function onSetupOffline(cfg: { totalPlayers: number; humanCount: number }) {
+function onSetupOffline(cfg: {
+  totalPlayers: number
+  humanCount: number
+  config?: Record<string, unknown> | null
+}) {
   totalPlayers.value = cfg.totalPlayers
   humanCount.value = cfg.humanCount
+  offlineConfig.value = cfg.config ?? null
   startOffline()
 }
 function onSetupOnline(cfg: {
@@ -76,7 +83,10 @@ function watchForResults(t: GameTransport) {
     const players = t.getPlayers()
     const scores = view.scores
     void recordResults(
-      players.map((p) => ({
+      // Only record real humans — bots must never appear on the leaderboard.
+      players
+        .filter((p) => !p.bot)
+        .map((p) => ({
         gameId: gameId.value,
         playerId: p.id,
         playerName: p.name,
@@ -95,7 +105,7 @@ function watchForResults(t: GameTransport) {
             : onlineVisibility.value === 'locked'
               ? 'private'
               : 'public',
-      })),
+        })),
     )
     off()
   })
@@ -113,6 +123,8 @@ function startOffline() {
     totalPlayers: totalPlayers.value,
     humanCount: humanCount.value,
     humanNames: [playerName.value],
+    humanIds: [playerId.value], // seat 0 = this device's persistent identity
+    config: offlineConfig.value ?? undefined,
   })
   watchForResults(transport.value)
 }

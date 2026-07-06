@@ -20,6 +20,13 @@ export interface LocalGameSetup {
   humanCount: number
   /** Display names for human seats (seat 0..humanCount-1). */
   humanNames?: string[]
+  /**
+   * Stable player ids for human seats (seat 0..humanCount-1). Seat 0 should be
+   * the device owner's persistent identity (usePlayerIdentity) so leaderboard
+   * results are keyed to the person, not a seat number. Falls back to a
+   * per-seat id when absent.
+   */
+  humanIds?: string[]
   seed?: string
   config?: unknown
 }
@@ -33,7 +40,9 @@ export function createLocalTransport(setup: LocalGameSetup) {
   for (let seat = 0; seat < setup.totalPlayers; seat++) {
     const isHuman = seat < setup.humanCount
     players.push({
-      id: isHuman ? `you-${seat}` : `bot-${seat}`,
+      // Humans use their stable identity id (leaderboard keys to the person);
+      // hotseat seats 1+ fall back to a per-seat id. Bots are never persisted.
+      id: isHuman ? (setup.humanIds?.[seat] ?? `you-${seat}`) : `bot-${seat}`,
       name: isHuman
         ? (setup.humanNames?.[seat] ?? `Player ${seat + 1}`)
         : `Bot ${seat + 1}`,
