@@ -29,6 +29,27 @@
     "spectating": "Unatazama",
     "noRules": "Hakuna sheria za mchezo huu bado."
   },
+  "setup": {
+    "gameOptions": "Mipangilio ya mchezo",
+    "difficulty": "Ugumu wa roboti",
+    "diffEasy": "Rahisi",
+    "diffNormal": "Wastani",
+    "diffHard": "Ngumu",
+    "matchLength": "Urefu wa mchezo",
+    "oneRound": "Raundi 1",
+    "nRounds": "Raundi {n}",
+    "oneHand": "Mkono 1",
+    "nHands": "Mikono {n}",
+    "handSize": "Idadi ya karata",
+    "multiRank": "Cheza karata nyingi za daraja moja",
+    "pickupStacking": "Rundika karata za kuchukua",
+    "callRequired": "Lazima ulie “Lia Kadi”",
+    "teamMode": "Timu",
+    "teamIndividual": "Kila mchezaji peke yake",
+    "teamsOfTwo": "Timu za wawili",
+    "teamsOfThree": "Timu za watatu",
+    "bidding": "Kuotea"
+  },
   "room": {
     "aboutLinks": "Kuhusu viungo vya chumba",
     "playerLink": "Kiungo cha mchezaji",

@@ -53,6 +53,14 @@ export function createLocalTransport(setup: LocalGameSetup) {
 
   const humanSeats = players.filter((p) => !p.bot).map((p) => p.seat)
   const config = setup.config ?? game.defaultConfig()
+
+  // Team assignment: for a teamMode config, group seats round-robin so partners
+  // sit opposite (seat % teamCount). Individual mode leaves team undefined.
+  const teamMode = (config as { teamMode?: string } | null)?.teamMode
+  if (teamMode === 'teams-of-two' || teamMode === 'teams-of-three') {
+    const teamCount = teamMode === 'teams-of-two' ? 2 : 3
+    for (const p of players) p.team = p.seat % teamCount
+  }
   // Seeds vary per launch without ambient RNG in engine code: a UI-side counter
   // combined with the chosen seed keeps deals fresh yet reproducible per launch.
   const seed = setup.seed ?? `local-${setup.gameId}-${seedCounter++}`

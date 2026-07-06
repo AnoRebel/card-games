@@ -29,6 +29,27 @@
     "spectating": "Spectating",
     "noRules": "No rules available for this game yet."
   },
+  "setup": {
+    "gameOptions": "Game options",
+    "difficulty": "Bot difficulty",
+    "diffEasy": "Easy",
+    "diffNormal": "Normal",
+    "diffHard": "Hard",
+    "matchLength": "Match length",
+    "oneRound": "1 round",
+    "nRounds": "{n} rounds",
+    "oneHand": "1 hand",
+    "nHands": "{n} hands",
+    "handSize": "Hand size",
+    "multiRank": "Play multiple same-rank cards",
+    "pickupStacking": "Stack pickup cards",
+    "callRequired": "Require “Last Card” call",
+    "teamMode": "Teams",
+    "teamIndividual": "Every player for themselves",
+    "teamsOfTwo": "Teams of two",
+    "teamsOfThree": "Teams of three",
+    "bidding": "Otea bidding"
+  },
   "room": {
     "aboutLinks": "About room links",
     "playerLink": "Player link",

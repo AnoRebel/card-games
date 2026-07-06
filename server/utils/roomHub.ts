@@ -389,10 +389,13 @@ export class RoomHub {
       })
     }
     const game = requireGame(room.config.gameId)
+    const teamMode = (room.config.gameConfig as { teamMode?: string } | undefined)?.teamMode
+    const teamCount = teamMode === 'teams-of-two' ? 2 : teamMode === 'teams-of-three' ? 3 : 0
     const players: Player[] = seated.map((m) => ({
       id: m.playerId,
       name: m.name,
       seat: m.seat!,
+      ...(teamCount ? { team: m.seat! % teamCount } : {}),
     }))
     room.state = game.createInitialState(
       room.config.gameConfig,

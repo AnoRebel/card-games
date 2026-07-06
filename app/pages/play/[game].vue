@@ -60,13 +60,16 @@ function onSetupOffline(cfg: {
   offlineConfig.value = cfg.config ?? null
   startOffline()
 }
+const onlineConfig = ref<Record<string, unknown> | null>(null)
 function onSetupOnline(cfg: {
   totalPlayers: number
   visibility: 'public' | 'locked'
   customId?: string
+  config?: Record<string, unknown> | null
 }) {
   totalPlayers.value = cfg.totalPlayers
   onlineVisibility.value = cfg.visibility
+  onlineConfig.value = cfg.config ?? null
   createOnlineRoom(cfg.customId)
 }
 
@@ -186,6 +189,7 @@ async function createOnlineRoom(customId?: string) {
           playerCount: totalPlayers.value,
           spectatorVisibility: onlineVisibility.value,
           customId: customId?.trim() || undefined,
+          gameConfig: onlineConfig.value ?? undefined,
         },
       },
     )
