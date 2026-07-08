@@ -17,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{ restart: []; newGame: []; exit: [] }>()
 
 const session = useGameSession(props.transport)
+const sfx = useSoundFx()
 const { state, legalMoves, isMyTurn, scores, players, viewerSeat, ready } = session
 
 // Respect prefers-reduced-motion for the declarative trick-card entrance.
@@ -123,6 +124,7 @@ props.transport.onChange((v) => {
       if (primedHands && after > before && stockRef.value) {
         const toViewer = p.seat === viewer
         const to = toViewer ? (handRef.value?.rootEl() ?? null) : oppEls.get(p.seat) ?? null
+        if (p.seat === viewer) sfx.play('draw') // your refill from stock
         if (to) {
           const reps = after - before
           // Stock card (~48px) grows to ~hand card size for the viewer; stays
@@ -157,7 +159,10 @@ let primedStock = false
 watch(
   () => ab.value.stock?.length ?? 0,
   (n, prev) => {
-    if (primedStock && n > (prev ?? 0) + 1 && tableRef.value) shuffle(tableRef.value)
+    if (primedStock && n > (prev ?? 0) + 1 && tableRef.value) {
+      shuffle(tableRef.value)
+      sfx.play('shuffle')
+    }
     primedStock = true
   },
 )
@@ -184,6 +189,7 @@ watch(() => ab.value.trump, (t) => {
 // in onPlay and suppressed here via flownByLocal).
 watch(() => ab.value.currentTrick?.length ?? 0, (n, prev) => {
   if (n > (prev ?? 0) && trickRef.value) {
+    sfx.play('play') // a card was played into the trick
     const tp = ab.value.currentTrick[n - 1]
     const id = tp ? cardId(tp.card) : null
     nextTick(() => {
@@ -220,8 +226,10 @@ watch(scores, (s) => {
     if (won) {
       confetti()
       if (tableRef.value) burst(tableRef.value)
+      sfx.play('win')
     } else if (tableRef.value) {
       loseShake(tableRef.value)
+      sfx.play('lose')
     }
     setTimeout(() => { showGameOver.value = true }, 700)
   })
