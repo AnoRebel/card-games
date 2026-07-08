@@ -29,6 +29,16 @@
     "spectating": "Unatazama",
     "noRules": "Hakuna sheria za mchezo huu bado."
   },
+  "profile": {
+    "title": "Wasifu",
+    "changeAvatar": "Badili picha",
+    "played": "Zimechezwa",
+    "wins": "Ushindi",
+    "winRate": "Kiwango cha ushindi",
+    "streak": "Mfululizo",
+    "noGames": "Hakuna michezo bado — cheza mchezo kuanza takwimu zako!",
+    "recordLine": "{wins}U / {played}"
+  },
   "setup": {
     "gameOptions": "Mipangilio ya mchezo",
     "difficulty": "Ugumu wa roboti",

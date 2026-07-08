@@ -29,6 +29,16 @@
     "spectating": "Spectating",
     "noRules": "No rules available for this game yet."
   },
+  "profile": {
+    "title": "Profile",
+    "changeAvatar": "Change avatar",
+    "played": "Played",
+    "wins": "Wins",
+    "winRate": "Win rate",
+    "streak": "Streak",
+    "noGames": "No games yet — play a match to start your stats!",
+    "recordLine": "{wins}W / {played}"
+  },
   "setup": {
     "gameOptions": "Game options",
     "difficulty": "Bot difficulty",

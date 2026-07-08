@@ -8,7 +8,6 @@ const { $t, $switchLocale, $getLocales, $getLocale } = useI18n()
 const { isDark, toggle } = useThemeMode()
 const { theme, motion, themes } = useAppTheme()
 const { notifications, sound } = usePreferences()
-const { name } = usePlayerIdentity()
 const modalUi = useThemedModalUi()
 </script>
 
@@ -16,12 +15,12 @@ const modalUi = useThemedModalUi()
   <USlideover v-model:open="open" :title="$t('common.settings')" side="right" :ui="modalUi">
     <template #body>
       <div class="space-y-5">
-        <!-- Identity -->
+        <!-- Profile: avatar, name, and your local stats -->
         <section class="space-y-1.5">
           <label class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $t('common.yourName') }}
+            {{ $t('profile.title') }}
           </label>
-          <UInput v-model="name" size="sm" />
+          <ProfileCard />
         </section>
 
         <!-- Visual theme -->
