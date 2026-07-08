@@ -20,6 +20,7 @@ import {
 } from '@card-games/engine-core'
 import { registerLastCard } from '@card-games/game-last-card'
 import { registerAlbastini } from '@card-games/game-albastini'
+import { consola } from 'consola'
 import type {
   ChatMessage,
   ClientMessage,
@@ -30,6 +31,8 @@ import type {
   RoomSnapshot,
   ServerMessage,
 } from './roomTypes'
+
+const log = consola.withTag('rooms')
 
 /** Minimal crossws peer surface we rely on. */
 export interface WsPeer {
@@ -119,7 +122,10 @@ export class RoomHub {
     const timer = setTimeout(() => {
       this.reapTimers.delete(roomId)
       const r = this.rooms.get(roomId)
-      if (r && this.isEmpty(r)) this.rooms.delete(roomId)
+      if (r && this.isEmpty(r)) {
+        this.rooms.delete(roomId)
+        log.info(`reaped empty room ${roomId} (${this.rooms.size} left)`)
+      }
     }, EMPTY_ROOM_GRACE_MS)
     // Don't keep the process alive just for a reap timer.
     ;(timer as { unref?: () => void }).unref?.()
@@ -153,6 +159,7 @@ export class RoomHub {
       disconnectGraceUntil: null,
       endedBy: null,
     })
+    log.info(`created room ${id} (${config.gameId}, ${this.rooms.size} total)`)
     return id
   }
 
@@ -202,6 +209,7 @@ export class RoomHub {
     try {
       msg = JSON.parse(raw) as ClientMessage
     } catch {
+      log.warn(`malformed message from peer ${peer.id} (${raw.length} bytes)`)
       return this.send(peer, { t: 'error', message: 'bad message' })
     }
     switch (msg.t) {
@@ -570,6 +578,17 @@ export class RoomHub {
     } catch {
       /* peer gone */
     }
+  }
+
+  /** Aggregate counts for the health endpoint / ops metrics. */
+  stats() {
+    let peers = 0
+    let inProgress = 0
+    for (const room of this.rooms.values()) {
+      peers += room.peers.size
+      if (room.phase === 'in-progress') inProgress++
+    }
+    return { rooms: this.rooms.size, peers, inProgress }
   }
 
   dispose() {
