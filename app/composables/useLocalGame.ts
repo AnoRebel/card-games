@@ -52,7 +52,13 @@ export function createLocalTransport(setup: LocalGameSetup) {
   }
 
   const humanSeats = players.filter((p) => !p.bot).map((p) => p.seat)
-  const config = setup.config ?? game.defaultConfig()
+  // `difficulty` rides on the setup config for the bot policy but is NOT an
+  // engine config field — strip it before handing config to the engine.
+  const rawConfig = (setup.config ?? null) as Record<string, unknown> | null
+  const difficulty = (rawConfig?.difficulty as 'easy' | 'normal' | 'hard' | undefined) ?? 'normal'
+  const engineConfig = rawConfig ? { ...rawConfig } : null
+  if (engineConfig) delete engineConfig.difficulty
+  const config = engineConfig ?? game.defaultConfig()
 
   // Team assignment: for a teamMode config, group seats round-robin so partners
   // sit opposite (seat % teamCount). Individual mode leaves team undefined.
@@ -71,5 +77,6 @@ export function createLocalTransport(setup: LocalGameSetup) {
     config,
     seed,
     humanSeats,
+    difficulty,
   })
 }

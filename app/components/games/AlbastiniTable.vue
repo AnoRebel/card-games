@@ -342,6 +342,7 @@ async function passBid() {
     <div class="flex flex-col items-center gap-2">
       <span
         class="text-sm font-semibold rounded-full px-4 py-1.5"
+        :class="isMyTurn ? 'cg-turn-active' : ''"
         :style="isMyTurn
           ? { background: 'var(--cg-accent)', color: 'var(--cg-accent-contrast)' }
           : { color: 'var(--cg-text-muted)' }"
@@ -428,3 +429,24 @@ async function passBid() {
     />
   </div>
 </template>
+
+<style scoped>
+/* "Your turn" pill breathes with an accent halo so it reads as ACTIVE. */
+.cg-turn-active {
+  animation: cg-turn-pulse 1.8s ease-in-out infinite;
+}
+@keyframes cg-turn-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--cg-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in oklch, var(--cg-accent) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cg-turn-active {
+    animation: none;
+  }
+}
+</style>

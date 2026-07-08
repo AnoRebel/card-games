@@ -21,7 +21,7 @@
   --cg-felt: radial-gradient(ellipse 120% 100% at 50% -10%, oklch(0.42 0.09 155), oklch(0.24 0.06 158) 70%);
   --cg-radius: 0.7rem;
   --cg-card-shadow: 0 6px 16px -6px oklch(0.1 0.05 150 / 0.6);
-  --cg-glow: none;
+  --cg-glow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 55%, transparent), 0 0 14px color-mix(in oklch, var(--cg-accent) 45%, transparent);
 }
 
 /* ---------- FELT (casino green + gold) ---------- */
@@ -39,7 +39,7 @@
   --cg-felt: radial-gradient(ellipse 120% 100% at 50% -10%, oklch(0.55 0.11 152), oklch(0.4 0.09 155) 72%);
   --cg-radius: 0.7rem;
   --cg-card-shadow: 0 6px 16px -6px oklch(0.4 0.05 150 / 0.4);
-  --cg-glow: none;
+  --cg-glow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 55%, transparent), 0 0 14px color-mix(in oklch, var(--cg-accent) 45%, transparent);
 }
 html.dark[data-game-theme="felt"] {
   --cg-bg: oklch(0.22 0.03 155);
@@ -54,7 +54,7 @@ html.dark[data-game-theme="felt"] {
   --cg-felt: radial-gradient(ellipse 120% 100% at 50% -10%, oklch(0.42 0.09 155), oklch(0.24 0.06 158) 70%);
   --cg-radius: 0.7rem;
   --cg-card-shadow: 0 6px 16px -6px oklch(0.1 0.05 150 / 0.6);
-  --cg-glow: none;
+  --cg-glow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 55%, transparent), 0 0 14px color-mix(in oklch, var(--cg-accent) 45%, transparent);
 }
 
 /* ---------- ARCADE (vibrant) ---------- */
@@ -71,7 +71,7 @@ html.dark[data-game-theme="felt"] {
   --cg-felt: linear-gradient(135deg, oklch(0.78 0.16 200), oklch(0.74 0.17 320));
   --cg-radius: 1.1rem;
   --cg-card-shadow: 0 8px 0 -2px oklch(0.7 0.12 290 / 0.35);
-  --cg-glow: none;
+  --cg-glow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 55%, transparent), 0 0 14px color-mix(in oklch, var(--cg-accent) 45%, transparent);
 }
 html.dark[data-game-theme="arcade"] {
   --cg-bg: oklch(0.2 0.04 285);
@@ -86,7 +86,7 @@ html.dark[data-game-theme="arcade"] {
   --cg-felt: linear-gradient(135deg, oklch(0.42 0.14 250), oklch(0.4 0.16 330));
   --cg-radius: 1.1rem;
   --cg-card-shadow: 0 8px 0 -2px oklch(0.4 0.14 320 / 0.5);
-  --cg-glow: none;
+  --cg-glow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 55%, transparent), 0 0 14px color-mix(in oklch, var(--cg-accent) 45%, transparent);
 }
 
 /* ---------- NEON (dark luxe + electric) ---------- */

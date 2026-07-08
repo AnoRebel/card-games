@@ -13,7 +13,7 @@ import {
   type Seat,
   applyMove,
 } from '@card-games/engine-core'
-import { chooseBotMove } from './bot'
+import { chooseBotMove, type BotDifficulty } from './bot'
 import type {
   ChatMessage,
   GameTransport,
@@ -30,6 +30,8 @@ export interface LocalTransportOptions<S extends BaseGameState, M extends BaseMo
   humanSeats: Seat[]
   /** ms delay before a bot acts, for watchability. */
   botDelayMs?: number
+  /** Bot skill (default 'normal'). Drives the heuristic strength. */
+  difficulty?: BotDifficulty
   /** Stamp messages without engine Date use (injected by the caller). */
   now?: () => string
 }
@@ -47,6 +49,7 @@ export class LocalTransport<
   private humanSeats: Set<Seat>
   private players: Player[]
   private botDelayMs: number
+  private difficulty: BotDifficulty
   private now: () => string
 
   private changeCbs = new Set<(v: TransportView<S, M>) => void>()
@@ -60,6 +63,7 @@ export class LocalTransport<
     this.players = opts.players
     this.humanSeats = new Set(opts.humanSeats)
     this.botDelayMs = opts.botDelayMs ?? 600
+    this.difficulty = opts.difficulty ?? 'normal'
     this.now = opts.now ?? (() => new Date().toISOString())
     this.state = opts.game.createInitialState(
       opts.config,
@@ -116,11 +120,14 @@ export class LocalTransport<
     if (active === null || this.game.isTerminal(this.state)) return
     if (this.humanSeats.has(active)) return // human's turn
 
+    // Difficulty tunes pace as well as play: easy bots are slow & deliberate,
+    // hard bots are snappy. (A hard bot that plays worse would just feel random.)
+    const paceFactor = this.difficulty === 'easy' ? 1.4 : this.difficulty === 'hard' ? 0.55 : 1
     this.botTimer = setTimeout(() => {
       if (this.destroyed) return
-      const move = chooseBotMove(this.game, this.state, active)
+      const move = chooseBotMove(this.game, this.state, active, this.difficulty)
       if (move) void this.submitMove(move)
-    }, this.botDelayMs)
+    }, Math.round(this.botDelayMs * paceFactor))
   }
 
   onChange(cb: (v: TransportView<S, M>) => void): () => void {
