@@ -16,10 +16,12 @@ const props = defineProps<{
 
 const session = useGameSession(props.transport)
 const { copy } = useClipboard()
+const { track } = useAnalytics()
 const copiedKey = ref<string | null>(null)
 
 function copyAs(key: string, value: string) {
   copy(value)
+  track('share_link_copied', { kind: key })
   copiedKey.value = key
   setTimeout(() => {
     if (copiedKey.value === key) copiedKey.value = null

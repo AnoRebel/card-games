@@ -17,6 +17,7 @@ const title = computed(() => meta.value?.name ?? 'Game')
 useHead({ title: () => title.value })
 
 const { id: playerId, name: playerName } = usePlayerIdentity()
+const { track } = useAnalytics()
 
 const totalPlayers = ref(2)
 const humanCount = ref(1)
@@ -85,6 +86,12 @@ function watchForResults(t: GameTransport) {
     recordedFor.value = key
     const players = t.getPlayers()
     const scores = view.scores
+    track('game_finished', {
+      game: gameId.value,
+      mode: t.mode,
+      players: players.length,
+      youWon: t.viewerSeat != null && scores.winners.includes(t.viewerSeat),
+    })
     void recordResults(
       // Only record real humans — bots must never appear on the leaderboard.
       players
@@ -129,6 +136,7 @@ function startOffline() {
     humanIds: [playerId.value], // seat 0 = this device's persistent identity
     config: offlineConfig.value ?? undefined,
   })
+  track('game_started', { game: gameId.value, mode: 'offline', players: totalPlayers.value, humans: humanCount.value })
   watchForResults(transport.value)
 }
 
@@ -194,6 +202,7 @@ async function createOnlineRoom(customId?: string) {
       },
     )
     createdPasscode.value = res.spectatorPasscode ?? null
+    track('room_created', { game: gameId.value, visibility: onlineVisibility.value, players: totalPlayers.value })
     // Host joins its own (possibly locked) room with the code it just received.
     joinOnline(res.roomId, false, createdPasscode.value ?? undefined)
     // Reflect the room in the URL so it can be shared.
