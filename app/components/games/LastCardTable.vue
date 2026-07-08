@@ -13,6 +13,8 @@ import type { GameTransport } from '~/transports/types'
 const props = defineProps<{
   transport: GameTransport<LastCardState, LastCardMove>
   canRematch?: boolean
+  /** Online room share URL — enables the game-over "invite" CTA. */
+  shareUrl?: string | null
 }>()
 const emit = defineEmits<{ restart: []; newGame: []; exit: [] }>()
 
@@ -652,6 +654,7 @@ async function draw() {
       :viewer-seat="viewerSeat"
       game-id="last-card"
       :can-rematch="canRematch"
+      :share-url="shareUrl"
       @rematch="emit('restart')"
       @new-game="emit('newGame')"
       @exit="emit('exit')"

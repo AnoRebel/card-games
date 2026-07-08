@@ -29,6 +29,13 @@
     "spectating": "Unatazama",
     "noRules": "Hakuna sheria za mchezo huu bado."
   },
+  "invite": {
+    "invite": "Alika",
+    "share": "Shiriki",
+    "copyLink": "Nakili kiungo",
+    "scanToJoin": "Skani ili kujiunga na mchezo",
+    "shareText": "Jiunge na mchezo wangu wa karata!"
+  },
   "profile": {
     "title": "Wasifu",
     "changeAvatar": "Badili picha",

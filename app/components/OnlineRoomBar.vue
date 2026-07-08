@@ -125,6 +125,7 @@ onBeforeUnmount(() => offConn?.())
 
     <!-- Share controls: PLAYERS only (spectators can't invite). -->
     <template v-if="!amSpectator">
+      <RoomShare :share-url="shareUrl" :title="$t('app.title')" />
       <UButton
         v-if="passcode"
         size="xs"

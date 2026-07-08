@@ -29,6 +29,13 @@
     "spectating": "Spectating",
     "noRules": "No rules available for this game yet."
   },
+  "invite": {
+    "invite": "Invite",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "scanToJoin": "Scan to join the game",
+    "shareText": "Join my card game!"
+  },
   "profile": {
     "title": "Profile",
     "changeAvatar": "Change avatar",
