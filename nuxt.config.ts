@@ -89,6 +89,8 @@ export default defineNuxtConfig({
   // is present; the script handles SPA route tracking itself.
   app: {
     head: {
+      // viewport-fit=cover so env(safe-area-inset-*) resolves on notched phones.
+      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
       meta: [
         // Matches the PWA manifest theme_color so the browser/OS chrome tints
         // to the felt-green brand when installed.

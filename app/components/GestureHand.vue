@@ -133,7 +133,8 @@ defineExpose({ cardEl, rootEl })
         :key="cardId(card)"
         :ref="(n) => setCardRef(n as Element | null, card)"
         :data-card-id="cardId(card)"
-        class="absolute bottom-0 touch-none transition-[filter]"
+        class="absolute bottom-0 touch-none transition-[filter,transform]"
+        :class="enabled && isPlayable(card) ? 'cg-playable' : ''"
         :style="{
           left: `${i * step}px`,
           zIndex: getDrag(cardId(card)) ? 100 : i,
@@ -165,3 +166,22 @@ defineExpose({ cardEl, rootEl })
     </span>
   </div>
 </template>
+
+<style scoped>
+/* On your turn, playable cards lift slightly and gain an accent underglow so
+   the eye goes straight to legal moves (unplayable cards are dimmed by
+   PlayingCard). */
+.cg-playable {
+  transform: translateY(-6px);
+}
+.cg-playable :deep(.cg-card) {
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 60%, transparent),
+    0 6px 14px -4px color-mix(in oklch, var(--cg-accent) 40%, transparent);
+  border-radius: 7%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cg-playable {
+    transform: none;
+  }
+}
+</style>

@@ -81,12 +81,20 @@ const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPl
 
     <div
       v-if="!rooms.length"
-      class="cg-surface rounded-2xl p-10 text-center space-y-2"
+      class="cg-surface rounded-2xl p-10 text-center space-y-3"
     >
       <p class="text-3xl">🪑</p>
       <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
         {{ $t('lobby.noPublicRooms') }}
       </p>
+      <div class="flex flex-wrap justify-center gap-2 pt-1">
+        <UButton :to="$localePath('/play/last-card')" color="primary" size="sm" icon="i-lucide-plus">
+          {{ $t('lobby.createOnlineRoom') }}
+        </UButton>
+        <UButton :to="$localePath('/play/last-card')" variant="soft" color="neutral" size="sm" icon="i-lucide-monitor">
+          {{ $t('lobby.playOffline') }}
+        </UButton>
+      </div>
     </div>
 
     <ul v-else class="space-y-2">

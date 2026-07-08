@@ -632,6 +632,11 @@ export class RoomHub {
     }
   }
 
+  /** Number of live rooms (for the create cap). */
+  roomCount(): number {
+    return this.rooms.size
+  }
+
   /** Aggregate counts for the health endpoint / ops metrics. */
   stats() {
     let peers = 0
