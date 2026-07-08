@@ -44,11 +44,23 @@ const banner = ref<{ type: 'error' | 'info'; text: string } | null>(null)
 const tutorialRef = ref<{ start: () => void } | null>(null)
 const setupOpen = ref(false)
 
+// Daily challenge: ?daily=1 starts an offline game on the shared seed of the day.
+const { today: daily, markPlayed: markDailyPlayed } = useDailyChallenge()
+const isDaily = ref(false)
+
 // Auto-open the setup modal when arriving with no active game and no shared room.
 onMounted(() => {
-  if (!transport.value && !route.query.room && meta.value) {
-    setTimeout(() => { if (!transport.value) setupOpen.value = true }, 150)
+  if (transport.value || route.query.room || !meta.value) return
+  if (route.query.daily === '1' && daily.value.gameId === gameId.value) {
+    isDaily.value = true
+    totalPlayers.value = 2
+    humanCount.value = 1
+    offlineConfig.value = null
+    startOffline(daily.value.seed)
+    return
   }
+  // The guards above are synchronous, so no delay/race-hack is needed here.
+  setupOpen.value = true
 })
 
 function onSetupOffline(cfg: {
@@ -92,6 +104,8 @@ function watchForResults(t: GameTransport) {
       players: players.length,
       youWon: t.viewerSeat != null && scores.winners.includes(t.viewerSeat),
     })
+    if (isDaily.value) markDailyPlayed() // advance the daily streak
+
     void recordResults(
       // Only record real humans — bots must never appear on the leaderboard.
       players
@@ -126,7 +140,7 @@ function watchForResults(t: GameTransport) {
 useGameNotifications(transport as Ref<GameTransport | null>, gameId)
 
 // --- offline ---------------------------------------------------------------
-function startOffline() {
+function startOffline(seed?: string) {
   transport.value?.destroy()
   transport.value = createLocalTransport({
     gameId: gameId.value,
@@ -135,8 +149,11 @@ function startOffline() {
     humanNames: [playerName.value],
     humanIds: [playerId.value], // seat 0 = this device's persistent identity
     config: offlineConfig.value ?? undefined,
+    seed, // daily challenge passes the shared seed of the day
   })
-  track('game_started', { game: gameId.value, mode: 'offline', players: totalPlayers.value, humans: humanCount.value })
+  track('game_started', {
+    game: gameId.value, mode: 'offline', players: totalPlayers.value, humans: humanCount.value, daily: isDaily.value,
+  })
   watchForResults(transport.value)
 }
 

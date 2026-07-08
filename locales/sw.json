@@ -29,6 +29,12 @@
     "spectating": "Unatazama",
     "noRules": "Hakuna sheria za mchezo huu bado."
   },
+  "daily": {
+    "title": "Changamoto ya Kila Siku",
+    "subtitle": "{game} ya leo — mgawo sawa kwa wote",
+    "doneToday": "Imekamilika",
+    "streak": "Mfululizo wa siku"
+  },
   "invite": {
     "invite": "Alika",
     "share": "Shiriki",

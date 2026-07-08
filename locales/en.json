@@ -29,6 +29,12 @@
     "spectating": "Spectating",
     "noRules": "No rules available for this game yet."
   },
+  "daily": {
+    "title": "Daily Challenge",
+    "subtitle": "Today's {game} — same deal for everyone",
+    "doneToday": "Done",
+    "streak": "Day streak"
+  },
   "invite": {
     "invite": "Invite",
     "share": "Share",
