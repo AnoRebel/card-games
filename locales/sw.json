@@ -71,7 +71,10 @@
     "teamIndividual": "Kila mchezaji peke yake",
     "teamsOfTwo": "Timu za wawili",
     "teamsOfThree": "Timu za watatu",
-    "bidding": "Kuotea"
+    "bidding": "Kuotea",
+    "turnTimer": "Muda wa zamu",
+    "timerOff": "Hakuna kikomo",
+    "timerSec": "Sekunde {n} kwa zamu"
   },
   "room": {
     "aboutLinks": "Kuhusu viungo vya chumba",

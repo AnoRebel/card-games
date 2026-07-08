@@ -14,6 +14,8 @@ interface CreateBody {
   spectatorPasscode?: string
   /** Optional memorable room id; sanitized server-side, falls back if taken. */
   customId?: string
+  /** Optional per-turn time limit (ms); auto-plays an idle seat on expiry. */
+  turnTimeoutMs?: number
 }
 
 export default defineEventHandler(async (event) => {
@@ -51,6 +53,11 @@ export default defineEventHandler(async (event) => {
     minPlayers: game.meta.minPlayers,
     spectatorVisibility: visibility,
     spectatorPasscode: passcode,
+    // Clamp to a sane range (5s–120s) if a limit was requested.
+    turnTimeoutMs:
+      body.turnTimeoutMs && body.turnTimeoutMs > 0
+        ? Math.min(120_000, Math.max(5_000, body.turnTimeoutMs))
+        : undefined,
   }
 
   const roomId = hub.createRoom(config, body.customId)

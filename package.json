@@ -39,6 +39,7 @@
     "@vueuse/motion": "^3.0.3",
     "@vueuse/nuxt": "^14.3.0",
     "animejs": "^4.5.0",
+    "consola": "^3.4.2",
     "date-fns": "^4.4.0",
     "dexie": "^4.4.4",
     "nuxt": "^4.4.8",

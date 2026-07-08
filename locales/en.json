@@ -71,7 +71,10 @@
     "teamIndividual": "Every player for themselves",
     "teamsOfTwo": "Teams of two",
     "teamsOfThree": "Teams of three",
-    "bidding": "Otea bidding"
+    "bidding": "Otea bidding",
+    "turnTimer": "Turn timer",
+    "timerOff": "No limit",
+    "timerSec": "{n}s per turn"
   },
   "room": {
     "aboutLinks": "About room links",

@@ -17,6 +17,7 @@ const emit = defineEmits<{
       visibility: 'public' | 'locked'
       customId?: string
       config?: SetupConfig
+      turnTimeoutMs?: number
     },
   ]
 }>()
@@ -32,6 +33,8 @@ const visibility = ref<'public' | 'locked'>('public')
 const mode = ref<'offline' | 'online'>('offline')
 const customId = ref('')
 const showOptions = ref(false)
+// Online per-turn time limit in seconds (0 = off).
+const turnTimeoutSec = ref(0)
 
 // --- Rule-variant options (per game). These map straight onto the engine
 // config; unset knobs fall back to the game's defaultConfig(). ------------
@@ -100,6 +103,7 @@ function start() {
       visibility: visibility.value,
       customId: customId.value.trim() || undefined,
       config,
+      turnTimeoutMs: turnTimeoutSec.value > 0 ? turnTimeoutSec.value * 1000 : undefined,
     })
   }
 }
@@ -201,6 +205,20 @@ function start() {
                   { label: $t('setup.diffEasy'), value: 'easy' },
                   { label: $t('setup.diffNormal'), value: 'normal' },
                   { label: $t('setup.diffHard'), value: 'hard' },
+                ]"
+              />
+            </UFormField>
+
+            <!-- Turn timer (online only) -->
+            <UFormField v-if="mode === 'online'" :label="$t('setup.turnTimer')" size="sm" class="pt-3">
+              <USelect
+                v-model="turnTimeoutSec"
+                size="sm"
+                :items="[
+                  { label: $t('setup.timerOff'), value: 0 },
+                  { label: $t('setup.timerSec', { n: 15 }), value: 15 },
+                  { label: $t('setup.timerSec', { n: 30 }), value: 30 },
+                  { label: $t('setup.timerSec', { n: 60 }), value: 60 },
                 ]"
               />
             </UFormField>

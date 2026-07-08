@@ -52,6 +52,8 @@ function ensureGames() {
 }
 
 interface Room {
+  /** The room's own id (its key in `rooms`) — avoids O(n) reverse lookups. */
+  id: string
   config: RoomConfig
   phase: RoomPhase
   hostClientId: string | null
@@ -89,6 +91,8 @@ export class RoomHub {
   private reapTimers = new Map<string, ReturnType<typeof setTimeout>>()
   /** Per-disconnected-player grace timers (clientId → timer). */
   private graceTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  /** Per-room turn timers (roomId → timer) for the optional turn limit. */
+  private turnTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   constructor() {
     ensureGames()
@@ -123,6 +127,7 @@ export class RoomHub {
       this.reapTimers.delete(roomId)
       const r = this.rooms.get(roomId)
       if (r && this.isEmpty(r)) {
+        this.clearTurnTimer(roomId)
         this.rooms.delete(roomId)
         log.info(`reaped empty room ${roomId} (${this.rooms.size} left)`)
       }
@@ -140,6 +145,50 @@ export class RoomHub {
     }
   }
 
+  private clearTurnTimer(roomId: string) {
+    const t = this.turnTimers.get(roomId)
+    if (t) {
+      clearTimeout(t)
+      this.turnTimers.delete(roomId)
+    }
+  }
+
+  /**
+   * If the room has a turn limit, (re)arm a timer for the active seat. On expiry
+   * we auto-play a legal move for that seat (or draw/pass) and advance — so one
+   * idle player can't freeze the room. Called after every state broadcast.
+   */
+  private scheduleTurnTimeout(roomId: string) {
+    this.clearTurnTimer(roomId)
+    const room = this.rooms.get(roomId)
+    const limit = room?.config.turnTimeoutMs ?? 0
+    if (!room || !room.state || room.phase !== 'in-progress' || limit <= 0) return
+    const active = room.state.activeSeat
+    if (active === null || active === undefined) return
+
+    const timer = setTimeout(() => {
+      this.turnTimers.delete(roomId)
+      const r = this.rooms.get(roomId)
+      if (!r || !r.state || r.phase !== 'in-progress') return
+      if (r.state.activeSeat !== active) return // they already moved
+      const game = requireGame(r.config.gameId)
+      const moves = game.getLegalMoves(r.state, active)
+      if (!moves.length) return
+      const res = applyMove(game, r.state, moves[0]!)
+      if (!res.ok) return
+      r.state = res.state
+      log.info(`turn timeout: auto-played for seat ${active} in room ${roomId}`)
+      if (game.isTerminal(r.state)) {
+        r.phase = 'finished'
+        r.endedAt = new Date().toISOString()
+        this.broadcastRoom(r)
+      }
+      this.broadcastState(r) // re-arms the next turn timer
+    }, limit)
+    ;(timer as { unref?: () => void }).unref?.()
+    this.turnTimers.set(roomId, timer)
+  }
+
   /**
    * Create a room. An optional `customId` lets the host pick a memorable id;
    * it's sanitized and must be unused, otherwise we fall back to a generated id.
@@ -147,6 +196,7 @@ export class RoomHub {
   createRoom(config: RoomConfig, customId?: string): string {
     const id = this.resolveId(customId)
     this.rooms.set(id, {
+      id,
       config,
       phase: 'lobby',
       hostClientId: null,
@@ -514,7 +564,7 @@ export class RoomHub {
   // --- Broadcast helpers ----------------------------------------------------
 
   private roomId(room: Room): string {
-    return [...this.rooms.entries()].find(([, r]) => r === room)?.[0] ?? ''
+    return room.id
   }
 
   private snapshot(room: Room): RoomSnapshot {
@@ -570,6 +620,8 @@ export class RoomHub {
   private broadcastState(room: Room) {
     // State is redacted per viewer → must send individually.
     for (const peer of room.peers.values()) this.sendStateTo(room, peer)
+    // (Re)arm the optional per-turn timer for the new active seat.
+    this.scheduleTurnTimeout(room.id)
   }
 
   private send(peer: WsPeer, msg: ServerMessage) {
@@ -594,8 +646,10 @@ export class RoomHub {
   dispose() {
     for (const t of this.reapTimers.values()) clearTimeout(t)
     for (const t of this.graceTimers.values()) clearTimeout(t)
+    for (const t of this.turnTimers.values()) clearTimeout(t)
     this.reapTimers.clear()
     this.graceTimers.clear()
+    this.turnTimers.clear()
     this.rooms.clear()
     this.peerRoom.clear()
   }

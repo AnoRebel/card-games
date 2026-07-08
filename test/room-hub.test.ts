@@ -3,7 +3,7 @@
  * crossws peer (no real socket). Covers: seating, start gate, hidden-hand
  * redaction, illegal/out-of-turn rejection, and spectator access control.
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { RoomHub, type WsPeer } from '../server/utils/roomHub'
 import type { RoomConfig } from '../server/utils/roomTypes'
 import { defaultLastCardConfig } from '@card-games/game-last-card'
@@ -314,5 +314,44 @@ describe('RoomHub — custom ids & public listing', () => {
     expect(list.map((r) => r.id)).toEqual(['open-table'])
     expect(list[0]!.seated).toBe(1)
     expect(list[0]!.maxPlayers).toBe(4)
+  })
+})
+
+describe('RoomHub — turn timer', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    hub = new RoomHub()
+    vi.useFakeTimers()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('auto-plays for a seat that lets its turn time out', () => {
+    const roomId = hub.createRoom(lastCardConfig({ turnTimeoutMs: 10_000 }))
+    const a = new MockPeer('A')
+    const b = new MockPeer('B')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'A' }))
+    hub.onMessage(b, JSON.stringify({ t: 'join', roomId, playerId: 'pb', name: 'B' }))
+    hub.onMessage(a, JSON.stringify({ t: 'start', roomId }))
+
+    const before = a.last('state')?.state?.version ?? 0
+    const activeBefore = a.last('state')?.state?.activeSeat
+    // Nobody moves → the active seat's turn times out.
+    vi.advanceTimersByTime(10_050)
+    const after = a.last('state')?.state?.version ?? 0
+    // A move was auto-applied (version bumped) and the turn advanced.
+    expect(after).toBeGreaterThan(before)
+    expect(a.last('state')?.state?.activeSeat).not.toBe(activeBefore)
+  })
+
+  it('does NOT auto-play when no turn limit is configured', () => {
+    const roomId = hub.createRoom(lastCardConfig()) // no turnTimeoutMs
+    const a = new MockPeer('A')
+    const b = new MockPeer('B')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'A' }))
+    hub.onMessage(b, JSON.stringify({ t: 'join', roomId, playerId: 'pb', name: 'B' }))
+    hub.onMessage(a, JSON.stringify({ t: 'start', roomId }))
+    const before = a.last('state')?.state?.version ?? 0
+    vi.advanceTimersByTime(120_000)
+    expect(a.last('state')?.state?.version ?? 0).toBe(before) // unchanged
   })
 })
