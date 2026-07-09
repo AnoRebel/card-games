@@ -9,6 +9,7 @@ export default defineEventHandler(() => {
   const hub = getRoomHub()
   return {
     ok: true,
+    version: useRuntimeConfig().public.appVersion,
     uptime: Math.round(process.uptime()),
     ...hub.stats(),
   }

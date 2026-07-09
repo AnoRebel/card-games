@@ -1,3 +1,31 @@
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+
+/**
+ * Automated version string, resolved ONCE at build time:
+ *   <pkg-version>+<git-short-sha>[-dirty]
+ * Prefers CI-provided values (NUXT_PUBLIC_APP_VERSION / GIT_SHA) so container
+ * builds without a .git dir still stamp a real version; falls back to git.
+ */
+function resolveVersion(): string {
+  if (process.env.NUXT_PUBLIC_APP_VERSION) return process.env.NUXT_PUBLIC_APP_VERSION
+  let pkgVersion = '0.0.0'
+  try {
+    pkgVersion = JSON.parse(readFileSync('./package.json', 'utf8')).version || pkgVersion
+  } catch { /* keep default */ }
+  const sha = process.env.GIT_SHA?.slice(0, 7) || tryGit('git rev-parse --short HEAD')
+  const dirty = process.env.GIT_SHA ? '' : tryGit('git status --porcelain') ? '-dirty' : ''
+  return sha ? `${pkgVersion}+${sha}${dirty}` : pkgVersion
+}
+function tryGit(cmd: string): string {
+  try {
+    return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return ''
+  }
+}
+const APP_VERSION = resolveVersion()
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   future: {
@@ -213,6 +241,8 @@ export default defineNuxtConfig({
       id: process.env.NUXT_UMAMI_SITE_ID || '',
     },
     public: {
+      // Build-stamped app version (overridable via NUXT_PUBLIC_APP_VERSION).
+      appVersion: APP_VERSION,
       conduit: {
         // Signaling/relay endpoint path (same Nitro server by default).
         path: '/api/conduit',
