@@ -56,9 +56,12 @@ export function createLocalTransport(setup: LocalGameSetup) {
   // engine config field — strip it before handing config to the engine.
   const rawConfig = (setup.config ?? null) as Record<string, unknown> | null
   const difficulty = (rawConfig?.difficulty as 'easy' | 'normal' | 'hard' | undefined) ?? 'normal'
-  const engineConfig = rawConfig ? { ...rawConfig } : null
-  if (engineConfig) delete engineConfig.difficulty
-  const config = engineConfig ?? game.defaultConfig()
+  // MERGE the (partial) setup config over the full engine defaults — the setup
+  // modal only sends the exposed knobs, so a bare merge would drop the rest of
+  // the config (pickupCards/suitChangeCards/…) and crash getLegalMoves.
+  const overrides = rawConfig ? { ...rawConfig } : {}
+  delete overrides.difficulty
+  const config = { ...(game.defaultConfig() as object), ...overrides }
 
   // Team assignment: for a teamMode config, group seats round-robin so partners
   // sit opposite (seat % teamCount). Individual mode leaves team undefined.

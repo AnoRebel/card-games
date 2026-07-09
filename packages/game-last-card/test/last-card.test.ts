@@ -28,6 +28,19 @@ const init = (seed = 'lc', cfg = defaultLastCardConfig()) =>
 const handCount = (s: LastCardState, seat: Seat) => s.hands[seat]!.length
 
 describe('Last Card — deal & start', () => {
+  it('a partial config MUST be merged over defaults (else getLegalMoves crashes)', () => {
+    // Regression: rooms.post / useLocalGame used `config ?? defaults`, so a
+    // partial variant like { rounds: 3 } dropped suitChangeCards/pickupCards…
+    // and isSuitChange/canPlay threw "Cannot read properties of undefined". The
+    // correct behaviour is a MERGE — assert a merged partial config is playable.
+    const merged = { ...defaultLastCardConfig(), rounds: 3 } // what the fix produces
+    const s = lastCardGame.createInitialState(merged, players, 'partial-cfg')
+    // getLegalMoves must not throw and must offer real moves.
+    expect(() => lastCardGame.getLegalMoves(s, s.activeSeat!)).not.toThrow()
+    expect(lastCardGame.getLegalMoves(s, s.activeSeat!).length).toBeGreaterThan(0)
+    expect(merged.suitChangeCards).toBeDefined() // the field a partial would drop
+  })
+
   it('deals the configured hand size to each player and turns one start card', () => {
     const s = init()
     expect(handCount(s, 0)).toBe(7)

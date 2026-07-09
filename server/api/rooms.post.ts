@@ -73,9 +73,17 @@ export default defineEventHandler(async (event) => {
     game.meta.maxPlayers,
   )
 
+  // MERGE the client's (possibly partial) variant config OVER the full engine
+  // defaults — a partial like { rounds: 3 } must not drop suitChangeCards etc.,
+  // or getLegalMoves crashes on the missing fields.
+  const gameConfig =
+    body.gameConfig && typeof body.gameConfig === 'object'
+      ? { ...(game.defaultConfig() as object), ...(body.gameConfig as object) }
+      : game.defaultConfig()
+
   const config: RoomConfig = {
     gameId: body.gameId,
-    gameConfig: body.gameConfig ?? game.defaultConfig(),
+    gameConfig,
     maxPlayers,
     minPlayers: game.meta.minPlayers,
     spectatorVisibility: visibility,
