@@ -99,6 +99,12 @@ const topicFor = (roomId: string) => `room:${roomId}`
 
 /** How long an empty room lingers before it's reaped (ms) — covers reconnects. */
 const EMPTY_ROOM_GRACE_MS = 60_000
+/**
+ * Grace for a room rehydrated from a snapshot after a restart. Nobody is
+ * connected yet by definition, so it gets a longer window for players to come
+ * back before it's reaped — otherwise restart-survival rooms would leak.
+ */
+const REHYDRATED_ROOM_GRACE_MS = 10 * 60_000
 /** How long a disconnected SEATED player has to reconnect before the in-progress
  *  game is auto-ended (ms). The client shows a countdown of the same length. */
 const PLAYER_GRACE_MS = 30_000
@@ -144,7 +150,7 @@ export class RoomHub {
    * empty lobby. Everything else (including a room created via the API but never
    * joined) is reaped, so rooms can't accumulate for the process's lifetime.
    */
-  private scheduleReap(roomId: string) {
+  private scheduleReap(roomId: string, delayMs = EMPTY_ROOM_GRACE_MS) {
     const room = this.rooms.get(roomId)
     if (!room) return
     if (room.config.persist) return this.cancelReap(roomId)
@@ -159,7 +165,7 @@ export class RoomHub {
         this.rooms.delete(roomId)
         log.info(`reaped empty room ${roomId} (${this.rooms.size} left)`)
       }
-    }, EMPTY_ROOM_GRACE_MS)
+    }, delayMs)
     // Don't keep the process alive just for a reap timer.
     ;(timer as { unref?: () => void }).unref?.()
     this.reapTimers.set(roomId, timer)
@@ -269,6 +275,10 @@ export class RoomHub {
           disconnectGraceUntil: null,
           endedBy: p.endedBy,
         })
+        // Nobody is connected to a rehydrated room yet, so nothing else would
+        // ever arm the reaper for it. Give players a long window to come back;
+        // the first rejoin cancels the timer (see onJoin).
+        this.scheduleReap(p.id, REHYDRATED_ROOM_GRACE_MS)
       }
       if (snaps.length) log.info(`rehydrated ${this.rooms.size} room(s) from snapshots`)
     } catch (e) {
