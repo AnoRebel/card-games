@@ -51,12 +51,13 @@ const abHands = ref(1)
 const abBidding = ref(true)
 
 // Team modes only make sense at certain player counts.
-const teamModeItems = computed(() => {
-  const items = [{ label: $t('setup.teamIndividual'), value: 'individual' as const }]
+type TeamModeItem = { label: string; value: 'individual' | 'teams-of-two' | 'teams-of-three' }
+const teamModeItems = computed<TeamModeItem[]>(() => {
+  const items: TeamModeItem[] = [{ label: $t('setup.teamIndividual'), value: 'individual' }]
   if (totalPlayers.value % 2 === 0 && totalPlayers.value >= 4)
-    items.push({ label: $t('setup.teamsOfTwo'), value: 'teams-of-two' as const })
+    items.push({ label: $t('setup.teamsOfTwo'), value: 'teams-of-two' })
   if (totalPlayers.value === 6)
-    items.push({ label: $t('setup.teamsOfThree'), value: 'teams-of-three' as const })
+    items.push({ label: $t('setup.teamsOfThree'), value: 'teams-of-three' })
   return items
 })
 watch(teamModeItems, (items) => {

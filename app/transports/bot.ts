@@ -24,10 +24,11 @@ export type BotDifficulty = 'easy' | 'normal' | 'hard'
 
 // ---- shared helpers --------------------------------------------------------
 
-const playedCards = (m: BaseMove): Card[] =>
-  m.type === 'play'
-    ? [(m as { card: Card }).card, ...((m as { extraCards?: Card[] }).extraCards ?? [])]
-    : []
+const playedCards = (m: BaseMove): Card[] => {
+  if (m.type !== 'play') return []
+  const pm = m as unknown as { card: Card; extraCards?: Card[] }
+  return [pm.card, ...(pm.extraCards ?? [])]
+}
 const shedCount = (m: BaseMove): number => playedCards(m).length
 
 /** Deterministic index into a pool from the state version (stable per game). */
@@ -138,7 +139,7 @@ function albastiniPolicy<S extends BaseGameState, M extends BaseMove>(
   const trump = s.trump
   const led = s.ledSuit
   const trick = s.currentTrick ?? []
-  const cardOf = (m: M) => (m as { card: Card }).card
+  const cardOf = (m: M) => (m as unknown as { card: Card }).card
 
   // Current best card to beat in the trick (highest trump, else highest led).
   const trumpPlays = trump ? trick.filter((t) => t.card.suit === trump) : []
