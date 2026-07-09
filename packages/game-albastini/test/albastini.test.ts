@@ -355,3 +355,29 @@ describe('Albastini — dealer follows the hand winner', () => {
     })
   }
 })
+
+describe('Albastini — teams-of-two scoring shares VP', () => {
+  it('both members of the winning team receive the victory points', () => {
+    // seats 0&2 = team 0, seats 1&3 = team 1
+    const teamed = players4.map((p) => ({ ...p, team: p.seat % 2 }))
+    const cfg: AlbastiniConfig = { ...defaultAlbastiniConfig(), teamMode: 'teams-of-two', enableBidding: false, hands: 1 }
+    let s = albastiniGame.createInitialState(cfg, teamed, 'teamcfg')
+    for (let i = 0; i < 500 && s.phase !== 'finished'; i++) {
+      const moves = albastiniGame.getLegalMoves(s, s.activeSeat!)
+      if (!moves.length) break
+      s = applyMove(albastiniGame, s, moves[0]!).state
+    }
+    expect(s.phase).toBe('finished')
+    const sc = albastiniGame.getScores(s)
+    if (sc.winners.length) {
+      // Winners come in whole teams: if seat X won, its partner (X±2) won too.
+      const winnerTeams = new Set(sc.winners.map((seat) => seat % 2))
+      for (const seat of teamed.map((p) => p.seat)) {
+        const won = sc.winners.includes(seat)
+        expect(won).toBe(winnerTeams.has(seat % 2))
+        // Every winning seat has the same nonzero VP as its teammate.
+        if (won) expect(sc.victoryBySeat![seat]).toBe(sc.victoryBySeat![(seat + 2) % 4])
+      }
+    }
+  })
+})

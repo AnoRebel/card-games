@@ -29,6 +29,53 @@
     "spectating": "Unatazama",
     "noRules": "Hakuna sheria za mchezo huu bado."
   },
+  "daily": {
+    "title": "Changamoto ya Kila Siku",
+    "subtitle": "{game} ya leo — mgawo sawa kwa wote",
+    "doneToday": "Imekamilika",
+    "streak": "Mfululizo wa siku"
+  },
+  "invite": {
+    "invite": "Alika",
+    "share": "Shiriki",
+    "copyLink": "Nakili kiungo",
+    "scanToJoin": "Skani ili kujiunga na mchezo",
+    "shareText": "Jiunge na mchezo wangu wa karata!"
+  },
+  "profile": {
+    "title": "Wasifu",
+    "changeAvatar": "Badili picha",
+    "played": "Zimechezwa",
+    "wins": "Ushindi",
+    "winRate": "Kiwango cha ushindi",
+    "streak": "Mfululizo",
+    "noGames": "Hakuna michezo bado — cheza mchezo kuanza takwimu zako!",
+    "recordLine": "{wins}U / {played}"
+  },
+  "setup": {
+    "gameOptions": "Mipangilio ya mchezo",
+    "difficulty": "Ugumu wa roboti",
+    "diffEasy": "Rahisi",
+    "diffNormal": "Wastani",
+    "diffHard": "Ngumu",
+    "matchLength": "Urefu wa mchezo",
+    "oneRound": "Raundi 1",
+    "nRounds": "Raundi {n}",
+    "oneHand": "Mkono 1",
+    "nHands": "Mikono {n}",
+    "handSize": "Idadi ya karata",
+    "multiRank": "Cheza karata nyingi za daraja moja",
+    "pickupStacking": "Rundika karata za kuchukua",
+    "callRequired": "Lazima ulie “Lia Kadi”",
+    "teamMode": "Timu",
+    "teamIndividual": "Kila mchezaji peke yake",
+    "teamsOfTwo": "Timu za wawili",
+    "teamsOfThree": "Timu za watatu",
+    "bidding": "Kuotea",
+    "turnTimer": "Muda wa zamu",
+    "timerOff": "Hakuna kikomo",
+    "timerSec": "Sekunde {n} kwa zamu"
+  },
   "room": {
     "aboutLinks": "Kuhusu viungo vya chumba",
     "playerLink": "Kiungo cha mchezaji",
@@ -43,7 +90,9 @@
     "startGame": "Anza mchezo",
     "needPlayers": "Unahitaji angalau wachezaji {min}",
     "endGame": "Maliza mchezo",
-    "waitingForHost": "Kumsubiri mwenyeji…"
+    "waitingForHost": "Kumsubiri mwenyeji…",
+    "reconnecting": "Inaunganisha upya…",
+    "reconnectingBody": "Muunganisho umekatika — tunajaribu kurudi. Kiti chako kimehifadhiwa."
   },
   "lobby": {
     "playOffline": "Cheza nje ya mtandao",
@@ -162,7 +211,9 @@
     "scopeAll": "Zote",
     "scopePublic": "Wazi",
     "scopePrivate": "Faragha",
-    "scopeOffline": "Nje ya mtandao"
+    "scopeOffline": "Nje ya mtandao",
+    "scopeGlobal": "Kimataifa",
+    "globalUnavailable": "Ubao wa washindi wa kimataifa haupatikani kwa sasa."
   },
   "tutorial": {
     "offerTitle": "Mgeni hapa?",

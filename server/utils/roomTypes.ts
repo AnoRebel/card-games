@@ -31,6 +31,12 @@ export interface RoomConfig {
   spectatorVisibility: SpectatorVisibility
   /** Passcode required to spectate a locked room (empty when public). */
   spectatorPasscode: string
+  /**
+   * Optional per-turn time limit (ms). When set, a seat that doesn't act in time
+   * has a legal move auto-played so one idle player can't stall the room.
+   * 0/undefined = no limit.
+   */
+  turnTimeoutMs?: number
 }
 
 /** Client → server messages. */

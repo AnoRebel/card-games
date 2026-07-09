@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (saves CI minutes on rapid pushes).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Analytics ids aren't needed in CI; keep them empty so the build doesn't
+      # try to wire a real provider.
+      NUXT_RYBBIT_SITE_ID: ''
+      NUXT_UMAMI_SITE_ID: ''
+      # Deterministic version stamp from the CI checkout (no .git dirty flag).
+      GIT_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.3.14'
+
+      # Cache the global bun install store keyed on the lockfile.
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      # Typecheck is INFORMATIONAL for now: vue-tsc (strict) flags a large body
+      # of pre-existing type debt from nuxt-i18n-micro's branded $t return type
+      # and Nuxt UI component prop types — none of which break the build. Kept
+      # visible so regressions are noticed; flip continue-on-error off once the
+      # baseline is cleared.
+      - name: Typecheck (non-blocking)
+        run: bun run typecheck
+        continue-on-error: true
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build

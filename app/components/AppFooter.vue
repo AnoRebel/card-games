@@ -8,6 +8,8 @@
 const year = new Date().getFullYear()
 const suits = ['♠', '♥', '♦', '♣']
 const pipsRef = ref<HTMLElement | null>(null)
+// Build-stamped app version, so a player can report exactly what they're running.
+const version = useRuntimeConfig().public.appVersion as string
 
 onMounted(() => {
   if (!pipsRef.value) return
@@ -55,6 +57,12 @@ onMounted(() => {
       <span class="hidden sm:inline text-xs" :style="{ color: 'var(--cg-text-muted)' }">
         · {{ year }}
       </span>
+      <span
+        v-if="version"
+        class="text-[10px] font-mono tabular-nums opacity-60"
+        :style="{ color: 'var(--cg-text-muted)' }"
+        :title="`Version ${version}`"
+      >v{{ version }}</span>
     </div>
   </footer>
 </template>

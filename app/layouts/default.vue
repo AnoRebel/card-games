@@ -73,7 +73,14 @@ const locales = computed(() => $getLocales())
       </nav>
     </header>
 
-    <main class="flex-1 mx-auto w-full max-w-5xl px-3 py-4">
+    <main
+      class="flex-1 mx-auto w-full max-w-5xl px-3 py-4"
+      :style="{
+        paddingLeft: 'max(0.75rem, env(safe-area-inset-left))',
+        paddingRight: 'max(0.75rem, env(safe-area-inset-right))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+      }"
+    >
       <slot />
     </main>
 

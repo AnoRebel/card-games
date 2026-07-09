@@ -10,6 +10,26 @@
  */
 import { getRoomHub, type WsPeer } from '../utils/roomHub'
 
+// --- abuse guards ----------------------------------------------------------
+// A single move/chat/join message is tiny; anything large is abuse.
+const MAX_MESSAGE_BYTES = 16 * 1024
+// Token bucket per peer: ~20 msgs/sec burst, refilling 10/sec. Normal play is
+// a handful of messages per turn, so this only bites floods.
+const BUCKET_CAP = 20
+const BUCKET_REFILL_PER_MS = 10 / 1000
+interface Bucket { tokens: number; last: number }
+const buckets = new Map<string, Bucket>()
+
+function allow(peerId: string, now: number): boolean {
+  let b = buckets.get(peerId)
+  if (!b) { b = { tokens: BUCKET_CAP, last: now }; buckets.set(peerId, b) }
+  b.tokens = Math.min(BUCKET_CAP, b.tokens + (now - b.last) * BUCKET_REFILL_PER_MS)
+  b.last = now
+  if (b.tokens < 1) return false
+  b.tokens -= 1
+  return true
+}
+
 // crossws Peer → our minimal WsPeer surface.
 function asWsPeer(peer: {
   id: string
@@ -33,14 +53,21 @@ export default defineWebSocketHandler({
   },
 
   message(peer, message) {
-    getRoomHub().onMessage(asWsPeer(peer as never), message.text())
+    const text = message.text()
+    // Drop oversized or flooding messages before they reach the hub.
+    if (text.length > MAX_MESSAGE_BYTES) return
+    // Date.now() is fine here — server transport layer, not the deterministic engine.
+    if (!allow(peer.id, Date.now())) return
+    getRoomHub().onMessage(asWsPeer(peer as never), text)
   },
 
   close(peer) {
+    buckets.delete(peer.id)
     getRoomHub().onClose(asWsPeer(peer as never))
   },
 
   error(peer) {
+    buckets.delete(peer.id)
     getRoomHub().onClose(asWsPeer(peer as never))
   },
 })

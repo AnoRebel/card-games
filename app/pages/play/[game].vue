@@ -17,9 +17,12 @@ const title = computed(() => meta.value?.name ?? 'Game')
 useHead({ title: () => title.value })
 
 const { id: playerId, name: playerName } = usePlayerIdentity()
+const { track } = useAnalytics()
 
 const totalPlayers = ref(2)
 const humanCount = ref(1)
+// Rule-variant config chosen in the setup modal (null = engine defaults).
+const offlineConfig = ref<Record<string, unknown> | null>(null)
 watch(meta, (m) => {
   if (m) totalPlayers.value = m.supportedPlayerCounts[0] ?? 2
 }, { immediate: true })
@@ -41,25 +44,48 @@ const banner = ref<{ type: 'error' | 'info'; text: string } | null>(null)
 const tutorialRef = ref<{ start: () => void } | null>(null)
 const setupOpen = ref(false)
 
+// Daily challenge: ?daily=1 starts an offline game on the shared seed of the day.
+const { today: daily, markPlayed: markDailyPlayed } = useDailyChallenge()
+const isDaily = ref(false)
+
 // Auto-open the setup modal when arriving with no active game and no shared room.
 onMounted(() => {
-  if (!transport.value && !route.query.room && meta.value) {
-    setTimeout(() => { if (!transport.value) setupOpen.value = true }, 150)
+  if (transport.value || route.query.room || !meta.value) return
+  if (route.query.daily === '1' && daily.value.gameId === gameId.value) {
+    isDaily.value = true
+    totalPlayers.value = 2
+    humanCount.value = 1
+    offlineConfig.value = null
+    startOffline(daily.value.seed)
+    return
   }
+  // The guards above are synchronous, so no delay/race-hack is needed here.
+  setupOpen.value = true
 })
 
-function onSetupOffline(cfg: { totalPlayers: number; humanCount: number }) {
+function onSetupOffline(cfg: {
+  totalPlayers: number
+  humanCount: number
+  config?: Record<string, unknown> | null
+}) {
   totalPlayers.value = cfg.totalPlayers
   humanCount.value = cfg.humanCount
+  offlineConfig.value = cfg.config ?? null
   startOffline()
 }
+const onlineConfig = ref<Record<string, unknown> | null>(null)
+const onlineTurnTimeoutMs = ref<number | undefined>(undefined)
 function onSetupOnline(cfg: {
   totalPlayers: number
   visibility: 'public' | 'locked'
   customId?: string
+  config?: Record<string, unknown> | null
+  turnTimeoutMs?: number
 }) {
   totalPlayers.value = cfg.totalPlayers
   onlineVisibility.value = cfg.visibility
+  onlineConfig.value = cfg.config ?? null
+  onlineTurnTimeoutMs.value = cfg.turnTimeoutMs
   createOnlineRoom(cfg.customId)
 }
 
@@ -75,8 +101,19 @@ function watchForResults(t: GameTransport) {
     recordedFor.value = key
     const players = t.getPlayers()
     const scores = view.scores
+    track('game_finished', {
+      game: gameId.value,
+      mode: t.mode,
+      players: players.length,
+      youWon: t.viewerSeat != null && scores.winners.includes(t.viewerSeat),
+    })
+    if (isDaily.value) markDailyPlayed() // advance the daily streak
+
     void recordResults(
-      players.map((p) => ({
+      // Only record real humans — bots must never appear on the leaderboard.
+      players
+        .filter((p) => !p.bot)
+        .map((p) => ({
         gameId: gameId.value,
         playerId: p.id,
         playerName: p.name,
@@ -95,7 +132,7 @@ function watchForResults(t: GameTransport) {
             : onlineVisibility.value === 'locked'
               ? 'private'
               : 'public',
-      })),
+        })),
     )
     off()
   })
@@ -106,13 +143,19 @@ function watchForResults(t: GameTransport) {
 useGameNotifications(transport as Ref<GameTransport | null>, gameId)
 
 // --- offline ---------------------------------------------------------------
-function startOffline() {
+function startOffline(seed?: string) {
   transport.value?.destroy()
   transport.value = createLocalTransport({
     gameId: gameId.value,
     totalPlayers: totalPlayers.value,
     humanCount: humanCount.value,
     humanNames: [playerName.value],
+    humanIds: [playerId.value], // seat 0 = this device's persistent identity
+    config: offlineConfig.value ?? undefined,
+    seed, // daily challenge passes the shared seed of the day
+  })
+  track('game_started', {
+    game: gameId.value, mode: 'offline', players: totalPlayers.value, humans: humanCount.value, daily: isDaily.value,
   })
   watchForResults(transport.value)
 }
@@ -174,10 +217,13 @@ async function createOnlineRoom(customId?: string) {
           playerCount: totalPlayers.value,
           spectatorVisibility: onlineVisibility.value,
           customId: customId?.trim() || undefined,
+          gameConfig: onlineConfig.value ?? undefined,
+          turnTimeoutMs: onlineTurnTimeoutMs.value,
         },
       },
     )
     createdPasscode.value = res.spectatorPasscode ?? null
+    track('room_created', { game: gameId.value, visibility: onlineVisibility.value, players: totalPlayers.value })
     // Host joins its own (possibly locked) room with the code it just received.
     joinOnline(res.roomId, false, createdPasscode.value ?? undefined)
     // Reflect the room in the URL so it can be shared.
@@ -394,6 +440,7 @@ const spectatorShareUrl = computed(() => {
         :key="`lc-${transportRev}`"
         :transport="(transport as any)"
         :can-rematch="canRematch"
+        :share-url="wsTransport ? shareUrl : null"
         @restart="restart"
         @new-game="newGame"
         @exit="quit"
@@ -403,6 +450,7 @@ const spectatorShareUrl = computed(() => {
         :key="`ab-${transportRev}`"
         :transport="(transport as any)"
         :can-rematch="canRematch"
+        :share-url="wsTransport ? shareUrl : null"
         @restart="restart"
         @new-game="newGame"
         @exit="quit"

@@ -16,10 +16,12 @@ const props = defineProps<{
 
 const session = useGameSession(props.transport)
 const { copy } = useClipboard()
+const { track } = useAnalytics()
 const copiedKey = ref<string | null>(null)
 
 function copyAs(key: string, value: string) {
   copy(value)
+  track('share_link_copied', { kind: key })
   copiedKey.value = key
   setTimeout(() => {
     if (copiedKey.value === key) copiedKey.value = null
@@ -57,10 +59,27 @@ const graceSeconds = computed(() => {
   const s = Math.ceil((until - now.value) / 1000)
   return s > 0 ? s : 0
 })
+
+// Socket connection state — show a "reconnecting" banner on a transient drop so
+// the player knows the game isn't lost (the server holds their seat).
+const connState = ref(props.transport.getConnectionState())
+let offConn: (() => void) | null = null
+onMounted(() => { offConn = props.transport.onConnection((s) => { connState.value = s }) })
+onBeforeUnmount(() => offConn?.())
 </script>
 
 <template>
   <div class="space-y-2">
+    <!-- Our own socket dropped — reconnecting (server holds our seat) -->
+    <UAlert
+      v-if="connState === 'reconnecting'"
+      color="warning"
+      variant="subtle"
+      icon="i-lucide-wifi-off"
+      :title="$t('room.reconnecting')"
+      :description="$t('room.reconnectingBody')"
+    />
+
     <!-- Reconnect countdown (a seated player dropped mid-game) -->
     <UAlert
       v-if="graceSeconds !== null"
@@ -106,6 +125,7 @@ const graceSeconds = computed(() => {
 
     <!-- Share controls: PLAYERS only (spectators can't invite). -->
     <template v-if="!amSpectator">
+      <RoomShare :share-url="shareUrl" :title="$t('app.title')" />
       <UButton
         v-if="passcode"
         size="xs"

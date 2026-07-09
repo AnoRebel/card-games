@@ -29,6 +29,53 @@
     "spectating": "Spectating",
     "noRules": "No rules available for this game yet."
   },
+  "daily": {
+    "title": "Daily Challenge",
+    "subtitle": "Today's {game} — same deal for everyone",
+    "doneToday": "Done",
+    "streak": "Day streak"
+  },
+  "invite": {
+    "invite": "Invite",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "scanToJoin": "Scan to join the game",
+    "shareText": "Join my card game!"
+  },
+  "profile": {
+    "title": "Profile",
+    "changeAvatar": "Change avatar",
+    "played": "Played",
+    "wins": "Wins",
+    "winRate": "Win rate",
+    "streak": "Streak",
+    "noGames": "No games yet — play a match to start your stats!",
+    "recordLine": "{wins}W / {played}"
+  },
+  "setup": {
+    "gameOptions": "Game options",
+    "difficulty": "Bot difficulty",
+    "diffEasy": "Easy",
+    "diffNormal": "Normal",
+    "diffHard": "Hard",
+    "matchLength": "Match length",
+    "oneRound": "1 round",
+    "nRounds": "{n} rounds",
+    "oneHand": "1 hand",
+    "nHands": "{n} hands",
+    "handSize": "Hand size",
+    "multiRank": "Play multiple same-rank cards",
+    "pickupStacking": "Stack pickup cards",
+    "callRequired": "Require “Last Card” call",
+    "teamMode": "Teams",
+    "teamIndividual": "Every player for themselves",
+    "teamsOfTwo": "Teams of two",
+    "teamsOfThree": "Teams of three",
+    "bidding": "Otea bidding",
+    "turnTimer": "Turn timer",
+    "timerOff": "No limit",
+    "timerSec": "{n}s per turn"
+  },
   "room": {
     "aboutLinks": "About room links",
     "playerLink": "Player link",
@@ -43,7 +90,9 @@
     "startGame": "Start the game",
     "needPlayers": "Need at least {min} players",
     "endGame": "End the game",
-    "waitingForHost": "Waiting for host…"
+    "waitingForHost": "Waiting for host…",
+    "reconnecting": "Reconnecting…",
+    "reconnectingBody": "Connection lost — trying to rejoin. Your seat is held."
   },
   "lobby": {
     "playOffline": "Play offline",
@@ -162,7 +211,9 @@
     "scopeAll": "All",
     "scopePublic": "Public",
     "scopePrivate": "Private",
-    "scopeOffline": "Offline"
+    "scopeOffline": "Offline",
+    "scopeGlobal": "Global",
+    "globalUnavailable": "The global leaderboard isn't available right now."
   },
   "tutorial": {
     "offerTitle": "New here?",

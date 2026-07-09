@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { standardDeck } from '@card-games/engine-core'
+import { standardDeck, getGame } from '@card-games/engine-core'
 
 const { $t, $localePath } = useI18n()
 useHead({ title: () => $t('app.title') })
+
+// Daily challenge — a fixed seed of the day + local streak.
+const { today: daily } = useDailyChallenge()
+const dailyGameName = computed(() => getGame(daily.value.gameId)?.meta.name ?? daily.value.gameId)
 
 const games = computed(() => [
   {
@@ -63,6 +67,28 @@ void standardDeck
         {{ $t('app.subtitle') }}
       </p>
     </section>
+
+    <!-- Daily challenge — same deal for everyone today, keeps a play streak -->
+    <NuxtLink
+      data-reveal
+      :to="$localePath(`/play/${daily.gameId}?daily=1`)"
+      class="block rounded-2xl p-4 cg-surface transition hover:-translate-y-0.5 flex items-center gap-3"
+    >
+      <span class="text-3xl">📅</span>
+      <div class="min-w-0 flex-1">
+        <p class="font-display font-bold flex items-center gap-2">
+          {{ $t('daily.title') }}
+          <UBadge v-if="daily.playedToday" color="success" variant="subtle" size="sm">{{ $t('daily.doneToday') }}</UBadge>
+        </p>
+        <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
+          {{ $t('daily.subtitle', { game: dailyGameName }) }}
+        </p>
+      </div>
+      <div v-if="daily.streak > 0" class="text-right shrink-0">
+        <p class="font-display font-bold text-lg leading-none">{{ daily.streak }}🔥</p>
+        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('daily.streak') }}</p>
+      </div>
+    </NuxtLink>
 
     <section class="grid gap-3 sm:grid-cols-2">
       <NuxtLink

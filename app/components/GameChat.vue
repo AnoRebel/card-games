@@ -152,8 +152,13 @@ function time(iso: string) {
     <button
       v-if="!open"
       type="button"
-      class="fixed bottom-4 right-4 z-50 grid place-items-center w-12 h-12 rounded-full shadow-xl transition hover:scale-105"
-      :style="{ background: 'var(--cg-accent)', color: 'var(--cg-accent-contrast)' }"
+      class="fixed z-50 grid place-items-center w-12 h-12 rounded-full shadow-xl transition hover:scale-105"
+      :style="{
+        background: 'var(--cg-accent)',
+        color: 'var(--cg-accent-contrast)',
+        right: 'max(1rem, env(safe-area-inset-right))',
+        bottom: 'max(1rem, env(safe-area-inset-bottom))',
+      }"
       :title="$t('chat.title')"
       @click="open = true"
     >

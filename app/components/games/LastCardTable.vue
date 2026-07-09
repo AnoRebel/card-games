@@ -13,10 +13,13 @@ import type { GameTransport } from '~/transports/types'
 const props = defineProps<{
   transport: GameTransport<LastCardState, LastCardMove>
   canRematch?: boolean
+  /** Online room share URL — enables the game-over "invite" CTA. */
+  shareUrl?: string | null
 }>()
 const emit = defineEmits<{ restart: []; newGame: []; exit: [] }>()
 
 const session = useGameSession(props.transport)
+const sfx = useSoundFx()
 const { state, legalMoves, isMyTurn, scores, players, viewerSeat, ready } = session
 
 const lc = computed(() => (state.value ?? {}) as LastCardState)
@@ -123,6 +126,7 @@ let flownByLocal: string | null = null
 watch(topDiscard, (top, prev) => {
   if (!top || (prev && cardId(top) === cardId(prev))) return
   const id = cardId(top)
+  sfx.play('play') // a card landed on the discard (yours or an opponent's)
   // Snapshot NOW — viewerSeat may flip (hotseat) before nextTick runs.
   const viewer = viewerSeat.value
   const player = lastPlayerSeat.value
@@ -154,12 +158,18 @@ let primedDraw = false
 watch(
   () => lc.value.drawPile?.length ?? 0,
   (n, prev) => {
-    if (primedDraw && n > (prev ?? 0) + 1 && drawRef.value) shuffle(drawRef.value)
+    if (primedDraw && n > (prev ?? 0) + 1 && drawRef.value) {
+      shuffle(drawRef.value)
+      sfx.play('shuffle')
+    }
     primedDraw = true
   },
 )
+let primedSuit = false
 watch(() => lc.value.activeSuit, () => {
   if (suitRef.value) suitFlourish(suitRef.value)
+  if (primedSuit) sfx.play('suit') // skip the initial deal's suit set
+  primedSuit = true
 })
 const showGameOver = ref(false)
 watch(scores, (s) => {
@@ -169,8 +179,10 @@ watch(scores, (s) => {
     if (won) {
       confetti()
       if (tableRef.value) burst(tableRef.value)
+      sfx.play('win')
     } else if (tableRef.value) {
       loseShake(tableRef.value)
+      sfx.play('lose')
     }
     // Let the celebration breathe before the scoreboard slides in.
     setTimeout(() => { showGameOver.value = true }, 700)
@@ -219,6 +231,7 @@ withError.onError?.(() => {
 })
 
 function animateDraw(seat: number, count: number, viewer: number | null) {
+  sfx.play('draw')
   nextTick(() => {
     const to = seatAnchor(seat, viewer)
     const from = drawCardRef.value ?? drawRef.value
@@ -506,6 +519,7 @@ async function draw() {
     <div class="flex justify-center">
       <span
         class="text-sm font-semibold rounded-full px-4 py-1.5"
+        :class="isMyTurn ? 'cg-turn-active' : ''"
         :style="isMyTurn
           ? { background: 'var(--cg-accent)', color: 'var(--cg-accent-contrast)' }
           : { color: 'var(--cg-text-muted)' }"
@@ -640,6 +654,7 @@ async function draw() {
       :viewer-seat="viewerSeat"
       game-id="last-card"
       :can-rematch="canRematch"
+      :share-url="shareUrl"
       @rematch="emit('restart')"
       @new-game="emit('newGame')"
       @exit="emit('exit')"
@@ -694,10 +709,24 @@ async function draw() {
     box-shadow: 0 0 0 10px color-mix(in oklch, var(--cg-accent) 0%, transparent);
   }
 }
+/* "Your turn" pill breathes with an accent halo so it reads as ACTIVE. */
+.cg-turn-active {
+  animation: cg-turn-pulse 1.8s ease-in-out infinite;
+}
+@keyframes cg-turn-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--cg-accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in oklch, var(--cg-accent) 0%, transparent);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .cg-suit-requested,
   .cg-must-draw,
-  .cg-call-last {
+  .cg-call-last,
+  .cg-turn-active {
     animation: none;
   }
 }

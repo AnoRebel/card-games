@@ -20,6 +20,13 @@ export interface LocalGameSetup {
   humanCount: number
   /** Display names for human seats (seat 0..humanCount-1). */
   humanNames?: string[]
+  /**
+   * Stable player ids for human seats (seat 0..humanCount-1). Seat 0 should be
+   * the device owner's persistent identity (usePlayerIdentity) so leaderboard
+   * results are keyed to the person, not a seat number. Falls back to a
+   * per-seat id when absent.
+   */
+  humanIds?: string[]
   seed?: string
   config?: unknown
 }
@@ -33,7 +40,9 @@ export function createLocalTransport(setup: LocalGameSetup) {
   for (let seat = 0; seat < setup.totalPlayers; seat++) {
     const isHuman = seat < setup.humanCount
     players.push({
-      id: isHuman ? `you-${seat}` : `bot-${seat}`,
+      // Humans use their stable identity id (leaderboard keys to the person);
+      // hotseat seats 1+ fall back to a per-seat id. Bots are never persisted.
+      id: isHuman ? (setup.humanIds?.[seat] ?? `you-${seat}`) : `bot-${seat}`,
       name: isHuman
         ? (setup.humanNames?.[seat] ?? `Player ${seat + 1}`)
         : `Bot ${seat + 1}`,
@@ -43,7 +52,21 @@ export function createLocalTransport(setup: LocalGameSetup) {
   }
 
   const humanSeats = players.filter((p) => !p.bot).map((p) => p.seat)
-  const config = setup.config ?? game.defaultConfig()
+  // `difficulty` rides on the setup config for the bot policy but is NOT an
+  // engine config field — strip it before handing config to the engine.
+  const rawConfig = (setup.config ?? null) as Record<string, unknown> | null
+  const difficulty = (rawConfig?.difficulty as 'easy' | 'normal' | 'hard' | undefined) ?? 'normal'
+  const engineConfig = rawConfig ? { ...rawConfig } : null
+  if (engineConfig) delete engineConfig.difficulty
+  const config = engineConfig ?? game.defaultConfig()
+
+  // Team assignment: for a teamMode config, group seats round-robin so partners
+  // sit opposite (seat % teamCount). Individual mode leaves team undefined.
+  const teamMode = (config as { teamMode?: string } | null)?.teamMode
+  if (teamMode === 'teams-of-two' || teamMode === 'teams-of-three') {
+    const teamCount = teamMode === 'teams-of-two' ? 2 : 3
+    for (const p of players) p.team = p.seat % teamCount
+  }
   // Seeds vary per launch without ambient RNG in engine code: a UI-side counter
   // combined with the chosen seed keeps deals fresh yet reproducible per launch.
   const seed = setup.seed ?? `local-${setup.gameId}-${seedCounter++}`
@@ -54,5 +77,6 @@ export function createLocalTransport(setup: LocalGameSetup) {
     config,
     seed,
     humanSeats,
+    difficulty,
   })
 }

@@ -17,6 +17,8 @@ const props = defineProps<{
   gameId: string
   /** Online host can trigger a rematch for everyone; offline always can. */
   canRematch?: boolean
+  /** Online room share URL — enables an "invite your group" CTA. */
+  shareUrl?: string | null
 }>()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ rematch: []; newGame: []; exit: [] }>()
@@ -104,7 +106,12 @@ const winnerNames = computed(() =>
       </div>
     </template>
     <template #footer>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+      <div class="w-full space-y-2">
+        <!-- Highest-intent moment to invite the group to play again -->
+        <div v-if="shareUrl" class="flex justify-center">
+          <RoomShare :share-url="shareUrl" :title="$t('app.title')" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
         <UButton
           v-if="canRematch"
           color="primary"
@@ -120,6 +127,7 @@ const winnerNames = computed(() =>
         <UButton variant="ghost" color="error" icon="i-lucide-log-out" class="justify-center" @click="emit('exit')">
           {{ $t('game.exit') }}
         </UButton>
+        </div>
       </div>
     </template>
   </UModal>

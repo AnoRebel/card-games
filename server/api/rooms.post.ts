@@ -14,6 +14,26 @@ interface CreateBody {
   spectatorPasscode?: string
   /** Optional memorable room id; sanitized server-side, falls back if taken. */
   customId?: string
+  /** Optional per-turn time limit (ms); auto-plays an idle seat on expiry. */
+  turnTimeoutMs?: number
+}
+
+// Global room cap and a small per-IP create rate limit — a room lingers ≥60s
+// even if never joined, so unbounded creation is a memory-exhaustion vector.
+const MAX_ROOMS = 500
+const CREATE_WINDOW_MS = 60_000
+const CREATE_MAX_PER_WINDOW = 10
+const createHits = new Map<string, number[]>()
+
+function rateLimited(ip: string, now: number): boolean {
+  const hits = (createHits.get(ip) ?? []).filter((t) => now - t < CREATE_WINDOW_MS)
+  if (hits.length >= CREATE_MAX_PER_WINDOW) {
+    createHits.set(ip, hits)
+    return true
+  }
+  hits.push(now)
+  createHits.set(ip, hits)
+  return false
 }
 
 export default defineEventHandler(async (event) => {
@@ -24,6 +44,15 @@ export default defineEventHandler(async (event) => {
 
   // Touch the hub first so games are registered in this server runtime.
   const hub = getRoomHub()
+
+  // Abuse guards: global cap + per-IP rate limit.
+  if (hub.roomCount() >= MAX_ROOMS) {
+    throw createError({ statusCode: 503, statusMessage: 'server busy — too many rooms' })
+  }
+  const ip = getRequestIP(event, { xForwardedFor: true }) ?? 'unknown'
+  if (rateLimited(ip, Date.now())) {
+    throw createError({ statusCode: 429, statusMessage: 'too many rooms created — slow down' })
+  }
 
   let game
   try {
@@ -51,6 +80,11 @@ export default defineEventHandler(async (event) => {
     minPlayers: game.meta.minPlayers,
     spectatorVisibility: visibility,
     spectatorPasscode: passcode,
+    // Clamp to a sane range (5s–120s) if a limit was requested.
+    turnTimeoutMs:
+      body.turnTimeoutMs && body.turnTimeoutMs > 0
+        ? Math.min(120_000, Math.max(5_000, body.turnTimeoutMs))
+        : undefined,
   }
 
   const roomId = hub.createRoom(config, body.customId)
