@@ -16,6 +16,8 @@ interface CreateBody {
   customId?: string
   /** Optional per-turn time limit (ms); auto-plays an idle seat on expiry. */
   turnTimeoutMs?: number
+  /** Keep the room alive while empty. Off by default — empty rooms are reaped. */
+  persist?: boolean
 }
 
 // Global room cap and a small per-IP create rate limit — a room lingers ≥60s
@@ -93,6 +95,7 @@ export default defineEventHandler(async (event) => {
       body.turnTimeoutMs && body.turnTimeoutMs > 0
         ? Math.min(120_000, Math.max(5_000, body.turnTimeoutMs))
         : undefined,
+    persist: body.persist === true,
   }
 
   const roomId = hub.createRoom(config, body.customId)

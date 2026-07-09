@@ -37,6 +37,12 @@ export interface RoomConfig {
    * 0/undefined = no limit.
    */
   turnTimeoutMs?: number
+  /**
+   * Keep the room alive even with nobody connected. Off by default: an empty
+   * room is reaped after a short grace period (covers refresh/reconnect), so a
+   * room created but never joined can't leak for the life of the process.
+   */
+  persist?: boolean
 }
 
 /** Client → server messages. */

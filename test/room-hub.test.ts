@@ -355,3 +355,56 @@ describe('RoomHub — turn timer', () => {
     expect(a.last('state')?.state?.version ?? 0).toBe(before) // unchanged
   })
 })
+
+describe('RoomHub — empty-room reaping', () => {
+  let hub: RoomHub
+  beforeEach(() => {
+    vi.useFakeTimers()
+    hub = new RoomHub()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('reaps a room that is created but never joined', () => {
+    hub.createRoom(lastCardConfig())
+    expect(hub.roomCount()).toBe(1)
+    // Nobody ever joins — after the empty-room grace it must be cleaned up.
+    vi.advanceTimersByTime(60_050)
+    expect(hub.roomCount()).toBe(0)
+  })
+
+  it('keeps a never-joined room alive when it opts into persist', () => {
+    hub.createRoom(lastCardConfig({ persist: true }))
+    expect(hub.roomCount()).toBe(1)
+    vi.advanceTimersByTime(60_050)
+    expect(hub.roomCount()).toBe(1)
+  })
+
+  it('a join cancels the pending reap, and the room survives past the grace', () => {
+    const roomId = hub.createRoom(lastCardConfig())
+    const a = new MockPeer('A')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'A' }))
+    vi.advanceTimersByTime(60_050)
+    expect(hub.roomCount()).toBe(1) // still occupied
+  })
+
+  it('reaps once the last member disconnects', () => {
+    const roomId = hub.createRoom(lastCardConfig())
+    const a = new MockPeer('A')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'A' }))
+    hub.onClose(a)
+    expect(hub.roomCount()).toBe(1) // grace period still running
+    vi.advanceTimersByTime(60_050)
+    expect(hub.roomCount()).toBe(0)
+  })
+
+  it('does not reap an emptied room that opted into persist', () => {
+    const roomId = hub.createRoom(lastCardConfig({ persist: true }))
+    const a = new MockPeer('A')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'A' }))
+    hub.onClose(a)
+    vi.advanceTimersByTime(60_050)
+    expect(hub.roomCount()).toBe(1)
+  })
+})

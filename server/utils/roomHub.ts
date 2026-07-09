@@ -139,16 +139,21 @@ export class RoomHub {
    * Schedule deletion of a room once it has no connected members. The grace
    * period lets a sole player reconnect (refresh, flaky network) without losing
    * the room. Any later join cancels the timer (see onJoin).
+   *
+   * Rooms opted into `config.persist` are exempt — they're meant to outlive an
+   * empty lobby. Everything else (including a room created via the API but never
+   * joined) is reaped, so rooms can't accumulate for the process's lifetime.
    */
   private scheduleReap(roomId: string) {
     const room = this.rooms.get(roomId)
     if (!room) return
+    if (room.config.persist) return this.cancelReap(roomId)
     if (!this.isEmpty(room)) return this.cancelReap(roomId)
     if (this.reapTimers.has(roomId)) return
     const timer = setTimeout(() => {
       this.reapTimers.delete(roomId)
       const r = this.rooms.get(roomId)
-      if (r && this.isEmpty(r)) {
+      if (r && !r.config.persist && this.isEmpty(r)) {
         this.clearTurnTimer(roomId)
         void deleteRoomSnapshot(roomId).catch(() => {})
         this.rooms.delete(roomId)
@@ -292,6 +297,10 @@ export class RoomHub {
       endedBy: null,
     })
     log.info(`created room ${id} (${config.gameId}, ${this.rooms.size} total)`)
+    // A brand-new room has no members, so nothing would ever arm the reaper for
+    // it. Arm it now: if nobody joins within the grace period it's cleaned up
+    // (the host's own join cancels the timer).
+    this.scheduleReap(id)
     return id
   }
 
