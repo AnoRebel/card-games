@@ -211,7 +211,9 @@
     "scopeAll": "All",
     "scopePublic": "Public",
     "scopePrivate": "Private",
-    "scopeOffline": "Offline"
+    "scopeOffline": "Offline",
+    "scopeGlobal": "Global",
+    "globalUnavailable": "The global leaderboard isn't available right now."
   },
   "tutorial": {
     "offerTitle": "New here?",

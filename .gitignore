@@ -29,3 +29,6 @@ openspec/
 .mcp.json
 .claude/
 .impeccable.md
+
+# LibSQL local datastore (persistent volume in prod)
+data/

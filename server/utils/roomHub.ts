@@ -21,6 +21,13 @@ import {
 import { registerLastCard } from '@card-games/game-last-card'
 import { registerAlbastini } from '@card-games/game-albastini'
 import { consola } from 'consola'
+import {
+  recordOnlineResults,
+  saveRoomSnapshot,
+  deleteRoomSnapshot,
+  loadRoomSnapshots,
+  type OnlineResult,
+} from './db'
 import type {
   ChatMessage,
   ClientMessage,
@@ -49,6 +56,19 @@ function ensureGames() {
   registerLastCard()
   registerAlbastini()
   registered = true
+}
+
+/** The subset of a Room that survives a restart (no live peer sockets). */
+interface PersistedRoom {
+  id: string
+  config: RoomConfig
+  phase: RoomPhase
+  hostClientId: string | null
+  members: RoomMember[]
+  state: BaseGameState | null
+  startedAt: string | null
+  endedAt: string | null
+  endedBy: string | null
 }
 
 interface Room {
@@ -93,6 +113,8 @@ export class RoomHub {
   private graceTimers = new Map<string, ReturnType<typeof setTimeout>>()
   /** Per-room turn timers (roomId → timer) for the optional turn limit. */
   private turnTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  /** Debounced snapshot timers (roomId → timer) for restart-survival. */
+  private snapshotTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   constructor() {
     ensureGames()
@@ -128,6 +150,7 @@ export class RoomHub {
       const r = this.rooms.get(roomId)
       if (r && this.isEmpty(r)) {
         this.clearTurnTimer(roomId)
+        void deleteRoomSnapshot(roomId).catch(() => {})
         this.rooms.delete(roomId)
         log.info(`reaped empty room ${roomId} (${this.rooms.size} left)`)
       }
@@ -187,6 +210,65 @@ export class RoomHub {
     }, limit)
     ;(timer as { unref?: () => void }).unref?.()
     this.turnTimers.set(roomId, timer)
+  }
+
+  // --- restart survival (persist in-progress rooms) -------------------------
+
+  /** The persistable shape of a room (no live peer sockets). */
+  private serializeRoom(room: Room): PersistedRoom {
+    return {
+      id: room.id,
+      config: room.config,
+      phase: room.phase,
+      hostClientId: room.hostClientId,
+      members: [...room.members.values()],
+      state: room.state,
+      startedAt: room.startedAt,
+      endedAt: room.endedAt,
+      endedBy: room.endedBy,
+    }
+  }
+
+  /** Debounced snapshot save so bursts of moves don't hammer the datastore. */
+  private snapshotSoon(roomId: string) {
+    if (this.snapshotTimers.has(roomId)) return
+    const t = setTimeout(() => {
+      this.snapshotTimers.delete(roomId)
+      const r = this.rooms.get(roomId)
+      if (r && r.phase === 'in-progress' && r.state) {
+        void saveRoomSnapshot(r.id, this.serializeRoom(r)).catch(() => {})
+      }
+    }, 1_000)
+    ;(t as { unref?: () => void }).unref?.()
+    this.snapshotTimers.set(roomId, t)
+  }
+
+  /** Rehydrate in-progress rooms from the datastore on boot (best-effort). */
+  async rehydrate(): Promise<void> {
+    try {
+      const snaps = await loadRoomSnapshots()
+      for (const { data } of snaps) {
+        const p = data as PersistedRoom
+        if (!p?.id || p.phase !== 'in-progress' || this.rooms.has(p.id)) continue
+        this.rooms.set(p.id, {
+          id: p.id,
+          config: p.config,
+          phase: p.phase,
+          hostClientId: null, // sockets are gone; reclaimed on rejoin by playerId
+          members: new Map(p.members.map((m) => [m.clientId, { ...m, connected: false }])),
+          peers: new Map(),
+          state: p.state,
+          chat: [],
+          startedAt: p.startedAt,
+          endedAt: p.endedAt,
+          disconnectGraceUntil: null,
+          endedBy: p.endedBy,
+        })
+      }
+      if (snaps.length) log.info(`rehydrated ${this.rooms.size} room(s) from snapshots`)
+    } catch (e) {
+      log.warn(`rehydrate skipped (datastore unavailable): ${e}`)
+    }
   }
 
   /**
@@ -466,6 +548,7 @@ export class RoomHub {
     room.endedAt = null
     room.endedBy = null
     room.disconnectGraceUntil = null
+    this.snapshotSoon(room.id) // start persisting for restart-survival
     this.broadcastRoom(room)
     this.broadcastState(room)
   }
@@ -478,6 +561,8 @@ export class RoomHub {
     // Record who ended it so every client can notify (natural/auto ends leave
     // this null).
     room.endedBy = room.members.get(peer.id)?.name ?? 'The host'
+    this.clearTurnTimer(room.id)
+    void deleteRoomSnapshot(room.id).catch(() => {}) // ended → nothing to resume
     this.broadcastRoom(room)
   }
 
@@ -500,9 +585,45 @@ export class RoomHub {
     if (game.isTerminal(room.state)) {
       room.phase = 'finished'
       room.endedAt = new Date().toISOString()
+      this.clearTurnTimer(room.id)
+      this.persistResults(room) // server-authoritative → global leaderboard
+      void deleteRoomSnapshot(room.id).catch(() => {}) // game over, no resume
       this.broadcastRoom(room)
+    } else {
+      this.snapshotSoon(room.id) // keep an up-to-date resume point
     }
     this.broadcastState(room)
+  }
+
+  /** Record this finished online match to the global leaderboard (humans only,
+   * once per match). Fire-and-forget; a datastore outage must not break play. */
+  private persistResults(room: Room) {
+    if (!room.state) return
+    const game = requireGame(room.config.gameId)
+    const scores = game.getScores(room.state)
+    const matchId = `${room.id}:${room.startedAt ?? ''}`
+    const rows: OnlineResult[] = []
+    for (const m of room.members.values()) {
+      if (m.seat === null) continue // spectators
+      const seat = m.seat
+      const raw = scores.bySeat[seat] ?? 0
+      rows.push({
+        gameId: room.config.gameId,
+        matchId,
+        playerId: m.playerId,
+        playerName: m.name,
+        won: scores.winners.includes(seat),
+        score: raw,
+        rankMetric:
+          room.config.gameId === 'last-card'
+            ? -raw
+            : (scores.victoryBySeat?.[seat] ?? raw),
+        playedAt: new Date().toISOString(),
+      })
+    }
+    void recordOnlineResults(rows)
+      .then(() => log.info(`persisted ${rows.length} result(s) for ${room.id}`))
+      .catch((e) => log.warn(`persist results failed: ${e}`))
   }
 
   private onChat(peer: WsPeer, msg: Extract<ClientMessage, { t: 'chat' }>) {
@@ -652,9 +773,11 @@ export class RoomHub {
     for (const t of this.reapTimers.values()) clearTimeout(t)
     for (const t of this.graceTimers.values()) clearTimeout(t)
     for (const t of this.turnTimers.values()) clearTimeout(t)
+    for (const t of this.snapshotTimers.values()) clearTimeout(t)
     this.reapTimers.clear()
     this.graceTimers.clear()
     this.turnTimers.clear()
+    this.snapshotTimers.clear()
     this.rooms.clear()
     this.peerRoom.clear()
   }
@@ -662,6 +785,10 @@ export class RoomHub {
 
 let hub: RoomHub | null = null
 export function getRoomHub(): RoomHub {
-  if (!hub) hub = new RoomHub()
+  if (!hub) {
+    hub = new RoomHub()
+    // Best-effort: bring back in-progress games persisted before a restart.
+    void hub.rehydrate()
+  }
   return hub
 }

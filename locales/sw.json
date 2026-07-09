@@ -211,7 +211,9 @@
     "scopeAll": "Zote",
     "scopePublic": "Wazi",
     "scopePrivate": "Faragha",
-    "scopeOffline": "Nje ya mtandao"
+    "scopeOffline": "Nje ya mtandao",
+    "scopeGlobal": "Kimataifa",
+    "globalUnavailable": "Ubao wa washindi wa kimataifa haupatikani kwa sasa."
   },
   "tutorial": {
     "offerTitle": "Mgeni hapa?",

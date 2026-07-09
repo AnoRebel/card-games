@@ -1,26 +1,51 @@
 <script setup lang="ts">
 /**
- * Leaderboard as a slideover (no scrolling needed). Separates public / private /
- * offline boards via a scope toggle.
+ * Leaderboard slideover. The GLOBAL board is server-authoritative (only ranked
+ * online matches, shared across everyone). The other scopes (all/public/private/
+ * offline) are this device's LOCAL history — honest "your games", never merged
+ * with the global ranking.
  */
 import type { LeaderboardScope } from '~/composables/useLeaderboard'
+
+type Scope = 'global' | LeaderboardScope
+interface Row { playerId: string; playerName: string; played: number; wins: number }
 
 const props = defineProps<{ gameId: string }>()
 const open = defineModel<boolean>('open', { default: false })
 
-const scope = ref<LeaderboardScope>('all')
-const { rows } = useLeaderboard(
-  () => props.gameId,
-  () => scope.value,
+const scope = ref<Scope>('global')
+const localScope = computed<LeaderboardScope>(() =>
+  scope.value === 'global' ? 'all' : scope.value,
+)
+const { rows: localRows } = useLeaderboard(() => props.gameId, () => localScope.value)
+
+// Global board — fetched from the server (only when the tab is active + open).
+const globalUnavailable = ref(false)
+const { data: globalData } = await useAsyncData(
+  () => `lb-${props.gameId}`,
+  async () => {
+    try {
+      const res = await $fetch<{ rows: Row[]; unavailable?: boolean }>(`/api/leaderboard/${props.gameId}`)
+      globalUnavailable.value = !!res.unavailable
+      return res.rows
+    } catch {
+      globalUnavailable.value = true
+      return [] as Row[]
+    }
+  },
+  { watch: [() => props.gameId, open], server: false, immediate: false },
+)
+
+const rows = computed<Row[]>(() =>
+  scope.value === 'global' ? (globalData.value ?? []) : localRows.value,
 )
 const modalUi = useThemedModalUi()
 const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
 
 // `labelKey` resolves via $t in the template so scope labels follow the locale.
-const scopes: { id: LeaderboardScope; labelKey: string; icon: string }[] = [
+const scopes: { id: Scope; labelKey: string; icon: string }[] = [
+  { id: 'global', labelKey: 'leaderboard.scopeGlobal', icon: 'i-lucide-trophy' },
   { id: 'all', labelKey: 'leaderboard.scopeAll', icon: 'i-lucide-list' },
-  { id: 'public', labelKey: 'leaderboard.scopePublic', icon: 'i-lucide-globe' },
-  { id: 'private', labelKey: 'leaderboard.scopePrivate', icon: 'i-lucide-lock' },
   { id: 'offline', labelKey: 'leaderboard.scopeOffline', icon: 'i-lucide-monitor' },
 ]
 </script>
@@ -44,7 +69,10 @@ const scopes: { id: LeaderboardScope; labelKey: string; icon: string }[] = [
           </UButton>
         </UFieldGroup>
 
-        <p v-if="!rows.length" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
+        <p v-if="scope === 'global' && globalUnavailable" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
+          {{ $t('leaderboard.globalUnavailable') }}
+        </p>
+        <p v-else-if="!rows.length" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
           {{ $t('leaderboard.empty') }}
         </p>
         <ol v-else class="space-y-0.5">
