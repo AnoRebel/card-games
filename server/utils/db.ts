@@ -134,6 +134,18 @@ export async function globalLeaderboard(gameId: string, limit = 50): Promise<Lea
   }))
 }
 
+/**
+ * Delete persisted leaderboard results — all games, or just one. Returns the
+ * number of rows removed. Used by the admin reset endpoint to clear test data.
+ */
+export async function clearResults(gameId?: string): Promise<number> {
+  const db = await getDb()
+  const rs = gameId
+    ? await db.execute({ sql: `DELETE FROM results WHERE game_id = ?`, args: [gameId] })
+    : await db.execute(`DELETE FROM results`)
+  return rs.rowsAffected
+}
+
 // --- room snapshots (survive restarts) -------------------------------------
 
 export async function saveRoomSnapshot(roomId: string, data: unknown): Promise<void> {
