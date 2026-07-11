@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { TZDate } from '@date-fns/tz'
 import { useDraggable } from '@vueuse/core'
 import type { GameTransport } from '~/transports/types'
+import type { WsTransport } from '~/transports/WsTransport'
 
 const props = defineProps<{ transport: GameTransport; name: string }>()
 
@@ -14,6 +15,19 @@ const session = useGameSession(props.transport)
 // Stable local identity → local hotseat chat is attributed to the device owner,
 // not the rotating active seat. (Online ignores this; the server attributes it.)
 const { id: localId, name: localName } = usePlayerIdentity()
+
+// --- Voice chat (online only) ---------------------------------------------
+// Offline/local play has no voice; the composable only spins up when enabled.
+const isOnline = computed(() => props.transport.mode === 'online')
+const ws = computed(() =>
+  isOnline.value ? (props.transport as unknown as WsTransport<never, never>) : null,
+)
+const voice = useVoiceChat({
+  roomId: () => ws.value?.roomId ?? '',
+  peerId: localId.value || 'anon',
+  name: () => props.name || localName.value,
+  enabled: isOnline,
+})
 const draft = ref('')
 const open = ref(false)
 const unread = ref(0)
@@ -116,6 +130,82 @@ function time(iso: string) {
           />
         </div>
 
+        <!-- Voice (online rooms only) -->
+        <div
+          v-if="isOnline"
+          class="px-3 py-2 border-b space-y-2"
+          :style="{ borderColor: 'var(--cg-border)' }"
+        >
+          <div class="flex items-center gap-1.5">
+            <UButton
+              v-if="!voice.inVoice.value"
+              size="xs"
+              color="primary"
+              icon="i-lucide-phone"
+              :label="$t('voice.join')"
+              @click="voice.join()"
+            />
+            <template v-else>
+              <UButton
+                size="xs"
+                color="error"
+                variant="soft"
+                icon="i-lucide-phone-off"
+                :label="$t('voice.leave')"
+                @click="voice.leave()"
+              />
+              <UTooltip :text="voice.muted.value ? $t('voice.unmute') : $t('voice.mute')">
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  color="neutral"
+                  :icon="voice.muted.value ? 'i-lucide-mic-off' : 'i-lucide-mic'"
+                  :aria-label="voice.muted.value ? $t('voice.unmute') : $t('voice.mute')"
+                  @click="voice.toggleMute()"
+                />
+              </UTooltip>
+              <span
+                v-if="voice.state.value === 'connecting'"
+                class="text-xs"
+                :style="{ color: 'var(--cg-text-muted)' }"
+              >
+                {{ $t('voice.connecting') }}
+              </span>
+              <span
+                v-else
+                class="text-xs ml-auto"
+                :style="{ color: 'var(--cg-text-muted)' }"
+              >
+                {{ $t('voice.inVoice', { count: voice.peers.value.length + 1 }) }}
+              </span>
+            </template>
+          </div>
+
+          <p v-if="voice.error.value" class="text-xs text-red-500">
+            {{ voice.error.value === 'micDenied' ? $t('voice.micDenied') : $t('voice.unsupported') }}
+          </p>
+
+          <ul v-if="voice.inVoice.value && voice.peers.value.length" class="space-y-1">
+            <li
+              v-for="p in voice.peers.value"
+              :key="p.peerId"
+              class="flex items-center gap-1.5 text-xs"
+            >
+              <span
+                class="inline-block w-2 h-2 rounded-full transition-all"
+                :class="p.speaking ? 'voice-pulse' : ''"
+                :style="{
+                  background: p.speaking ? 'var(--cg-accent)' : 'var(--cg-text-muted)',
+                  opacity: p.speaking ? 1 : 0.4,
+                }"
+                :title="p.speaking ? $t('voice.speaking') : ''"
+              />
+              <UIcon name="i-lucide-volume-2" class="shrink-0" :style="{ color: 'var(--cg-text-muted)' }" />
+              <span class="truncate">{{ p.name }}</span>
+            </li>
+          </ul>
+        </div>
+
         <div ref="listRef" class="flex-1 overflow-y-auto p-3 space-y-1.5 text-sm" data-tour="chat">
           <p v-if="!session.chat.value.length" :style="{ color: 'var(--cg-text-muted)' }">
             {{ $t('chat.empty') }}
@@ -183,5 +273,19 @@ function time(iso: string) {
 .chat-pop-leave-to {
   opacity: 0;
   transform: scale(0.9) translateY(8px);
+}
+.voice-pulse {
+  animation: voice-pulse 1s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--cg-accent);
+  }
+  50% {
+    transform: scale(1.3);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 30%, transparent);
+  }
 }
 </style>

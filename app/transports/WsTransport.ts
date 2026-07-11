@@ -162,6 +162,14 @@ export class WsTransport<S extends BaseGameState, M extends BaseMove>
   get isHost() {
     return this.myClientId !== null && this.myClientId === this.hostClientId
   }
+  /** The room this transport is connected to (used by voice chat signalling). */
+  get roomId() {
+    return this.opts.roomId
+  }
+  /** This client's stable player identity (used by voice chat signalling). */
+  get playerId() {
+    return this.opts.playerId
+  }
 
   private wsUrl(): string {
     if (this.opts.url) return this.opts.url
