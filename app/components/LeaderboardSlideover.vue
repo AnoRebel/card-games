@@ -43,10 +43,12 @@ const modalUi = useThemedModalUi()
 const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
 
 // `labelKey` resolves via $t in the template so scope labels follow the locale.
+// The two local scopes are labelled "my games" / "my offline games" — calling
+// the first one "All" read as "global + local", which it never was.
 const scopes: { id: Scope; labelKey: string; icon: string }[] = [
   { id: 'global', labelKey: 'leaderboard.scopeGlobal', icon: 'i-lucide-trophy' },
-  { id: 'all', labelKey: 'leaderboard.scopeAll', icon: 'i-lucide-list' },
-  { id: 'offline', labelKey: 'leaderboard.scopeOffline', icon: 'i-lucide-monitor' },
+  { id: 'all', labelKey: 'leaderboard.scopeMine', icon: 'i-lucide-user' },
+  { id: 'offline', labelKey: 'leaderboard.scopeMineOffline', icon: 'i-lucide-monitor' },
 ]
 </script>
 
@@ -68,6 +70,10 @@ const scopes: { id: Scope; labelKey: string; icon: string }[] = [
             {{ $t(s.labelKey) }}
           </UButton>
         </UFieldGroup>
+
+        <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
+          {{ scope === 'global' ? $t('leaderboard.globalCaption') : $t('leaderboard.localCaption') }}
+        </p>
 
         <p v-if="scope === 'global' && globalUnavailable" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
           {{ $t('leaderboard.globalUnavailable') }}
