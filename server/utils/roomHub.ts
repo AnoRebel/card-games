@@ -482,6 +482,23 @@ export class RoomHub {
         !msg.asSpectator &&
         room.phase === 'lobby' &&
         seatedCount < room.config.maxPlayers
+      // Anyone who doesn't land a seat becomes a spectator — including someone
+      // who wanted to play but arrived to a full/in-progress room. Enforce the
+      // host's spectator cap on that role, not just on explicit `asSpectator`.
+      if (!wantsSeat) {
+        const cap = room.config.maxSpectators
+        if (cap !== undefined) {
+          const spectators = [...room.members.values()].filter((m) => m.spectator).length
+          if (spectators >= cap) {
+            return this.send(peer, {
+              t: 'denied',
+              reason: cap === 0
+                ? 'this room does not allow spectators'
+                : 'this room is full — the spectator limit has been reached',
+            })
+          }
+        }
+      }
       member = {
         clientId: peer.id,
         playerId: msg.playerId,

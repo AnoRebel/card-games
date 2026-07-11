@@ -225,6 +225,51 @@ describe('RoomHub — spectator access control', () => {
     )
     expect(s.last('denied')).toBeTruthy()
   })
+
+  it('enforces the spectator cap: admits up to the limit, denies past it', () => {
+    const roomId = hub.createRoom(lastCardConfig({ maxSpectators: 1 }))
+    const s1 = new MockPeer('S1')
+    const s2 = new MockPeer('S2')
+    hub.onMessage(s1, JSON.stringify({ t: 'join', roomId, playerId: 'ps1', name: 'S1', asSpectator: true }))
+    hub.onMessage(s2, JSON.stringify({ t: 'join', roomId, playerId: 'ps2', name: 'S2', asSpectator: true }))
+    expect(s1.last('joined')?.youAre.spectator).toBe(true)
+    expect(s2.last('joined')).toBeUndefined()
+    expect(s2.last('denied')).toBeTruthy()
+  })
+
+  it('maxSpectators: 0 forbids spectators entirely', () => {
+    const roomId = hub.createRoom(lastCardConfig({ maxSpectators: 0 }))
+    const s = new MockPeer('S')
+    hub.onMessage(s, JSON.stringify({ t: 'join', roomId, playerId: 'ps', name: 'S', asSpectator: true }))
+    expect(s.last('joined')).toBeUndefined()
+    expect(s.last('denied')).toBeTruthy()
+  })
+
+  it('the cap also applies to a player who arrives to a full room (becomes a spectator)', () => {
+    // 2-seat room, no spectators allowed. Two players fill it; a third joiner
+    // who wanted to PLAY would fall back to spectator — and must be denied.
+    const roomId = hub.createRoom(lastCardConfig({ maxPlayers: 2, maxSpectators: 0 }))
+    const a = new MockPeer('A')
+    const b = new MockPeer('B')
+    hub.onMessage(a, JSON.stringify({ t: 'join', roomId, playerId: 'pa', name: 'A' }))
+    hub.onMessage(b, JSON.stringify({ t: 'join', roomId, playerId: 'pb', name: 'B' }))
+    const c = new MockPeer('C')
+    hub.onMessage(c, JSON.stringify({ t: 'join', roomId, playerId: 'pc', name: 'C' }))
+    expect(c.last('joined')).toBeUndefined()
+    expect(c.last('denied')).toBeTruthy()
+  })
+
+  it('a reconnecting spectator is not double-counted against the cap', () => {
+    const roomId = hub.createRoom(lastCardConfig({ maxSpectators: 1 }))
+    const s = new MockPeer('S')
+    hub.onMessage(s, JSON.stringify({ t: 'join', roomId, playerId: 'ps', name: 'S', asSpectator: true }))
+    // Same playerId rejoins on a new connection — reclaims the spectator slot,
+    // must not be rejected as "over the cap".
+    const s2 = new MockPeer('S-again')
+    hub.onMessage(s2, JSON.stringify({ t: 'join', roomId, playerId: 'ps', name: 'S', asSpectator: true }))
+    expect(s2.last('joined')?.youAre.spectator).toBe(true)
+    expect(s2.last('denied')).toBeUndefined()
+  })
 })
 
 describe('RoomHub — manual end', () => {

@@ -75,17 +75,23 @@ function onSetupOffline(cfg: {
 }
 const onlineConfig = ref<Record<string, unknown> | null>(null)
 const onlineTurnTimeoutMs = ref<number | undefined>(undefined)
+const onlinePersist = ref<boolean | undefined>(undefined)
+const onlineMaxSpectators = ref<number | undefined>(undefined)
 function onSetupOnline(cfg: {
   totalPlayers: number
   visibility: 'public' | 'locked'
   customId?: string
   config?: Record<string, unknown> | null
   turnTimeoutMs?: number
+  persist?: boolean
+  maxSpectators?: number
 }) {
   totalPlayers.value = cfg.totalPlayers
   onlineVisibility.value = cfg.visibility
   onlineConfig.value = cfg.config ?? null
   onlineTurnTimeoutMs.value = cfg.turnTimeoutMs
+  onlinePersist.value = cfg.persist
+  onlineMaxSpectators.value = cfg.maxSpectators
   createOnlineRoom(cfg.customId)
 }
 
@@ -219,6 +225,8 @@ async function createOnlineRoom(customId?: string) {
           customId: customId?.trim() || undefined,
           gameConfig: onlineConfig.value ?? undefined,
           turnTimeoutMs: onlineTurnTimeoutMs.value,
+          persist: onlinePersist.value,
+          maxSpectators: onlineMaxSpectators.value,
         },
       },
     )

@@ -18,6 +18,8 @@ const emit = defineEmits<{
       customId?: string
       config?: SetupConfig
       turnTimeoutMs?: number
+      persist?: boolean
+      maxSpectators?: number
     },
   ]
 }>()
@@ -35,6 +37,10 @@ const customId = ref('')
 const showOptions = ref(false)
 // Online per-turn time limit in seconds (0 = off).
 const turnTimeoutSec = ref(0)
+// Keep the room alive while empty (off = reaped after a short grace).
+const persist = ref(false)
+// Cap on concurrent spectators. -1 = none allowed, 0 = unlimited, n>0 = cap.
+const maxSpectators = ref(0)
 
 // --- Rule-variant options (per game). These map straight onto the engine
 // config; unset knobs fall back to the game's defaultConfig(). ------------
@@ -105,6 +111,9 @@ function start() {
       customId: customId.value.trim() || undefined,
       config,
       turnTimeoutMs: turnTimeoutSec.value > 0 ? turnTimeoutSec.value * 1000 : undefined,
+      persist: persist.value || undefined,
+      // 0 = unlimited (omit); -1 = none; n>0 = cap.
+      maxSpectators: maxSpectators.value !== 0 ? maxSpectators.value : undefined,
     })
   }
 }
@@ -210,19 +219,44 @@ function start() {
               />
             </UFormField>
 
-            <!-- Turn timer (online only) -->
-            <UFormField v-if="mode === 'online'" :label="$t('setup.turnTimer')" size="sm" class="pt-3">
-              <USelect
-                v-model="turnTimeoutSec"
-                size="sm"
-                :items="[
-                  { label: $t('setup.timerOff'), value: 0 },
-                  { label: $t('setup.timerSec', { n: 15 }), value: 15 },
-                  { label: $t('setup.timerSec', { n: 30 }), value: 30 },
-                  { label: $t('setup.timerSec', { n: 60 }), value: 60 },
-                ]"
-              />
-            </UFormField>
+            <!-- Online-only room options -->
+            <template v-if="mode === 'online'">
+              <div class="grid grid-cols-2 gap-3 pt-3">
+                <UFormField :label="$t('setup.turnTimer')" size="sm">
+                  <USelect
+                    v-model="turnTimeoutSec"
+                    size="sm"
+                    :items="[
+                      { label: $t('setup.timerOff'), value: 0 },
+                      { label: $t('setup.timerSec', { n: 15 }), value: 15 },
+                      { label: $t('setup.timerSec', { n: 30 }), value: 30 },
+                      { label: $t('setup.timerSec', { n: 60 }), value: 60 },
+                    ]"
+                  />
+                </UFormField>
+                <UFormField :label="$t('setup.maxSpectators')" size="sm">
+                  <USelect
+                    v-model="maxSpectators"
+                    size="sm"
+                    :items="[
+                      { label: $t('setup.spectatorsUnlimited'), value: 0 },
+                      { label: $t('setup.spectatorsNone'), value: -1 },
+                      ...[2, 5, 10, 25].map((n) => ({ label: `${n}`, value: n })),
+                    ]"
+                  />
+                </UFormField>
+              </div>
+
+              <label class="flex items-start gap-2 cursor-pointer">
+                <USwitch v-model="persist" size="sm" class="mt-0.5" />
+                <span class="text-sm">
+                  {{ $t('setup.persistRoom') }}
+                  <span class="block text-xs" :style="{ color: 'var(--cg-text-muted)' }">
+                    {{ $t('setup.persistRoomHint') }}
+                  </span>
+                </span>
+              </label>
+            </template>
 
             <!-- Last Card options -->
             <template v-if="gameId === 'last-card'">

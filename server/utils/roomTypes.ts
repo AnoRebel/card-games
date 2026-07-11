@@ -43,6 +43,11 @@ export interface RoomConfig {
    * room created but never joined can't leak for the life of the process.
    */
   persist?: boolean
+  /**
+   * Cap on concurrent spectators. Undefined = unlimited; 0 = none allowed.
+   * A spectator joining past the cap is denied.
+   */
+  maxSpectators?: number
 }
 
 /** Client → server messages. */

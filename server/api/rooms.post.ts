@@ -18,6 +18,8 @@ interface CreateBody {
   turnTimeoutMs?: number
   /** Keep the room alive while empty. Off by default — empty rooms are reaped. */
   persist?: boolean
+  /** Spectator cap. Omit/0 from the client = unlimited; -1 = none allowed. */
+  maxSpectators?: number
 }
 
 // Global room cap and a small per-IP create rate limit — a room lingers ≥60s
@@ -96,6 +98,13 @@ export default defineEventHandler(async (event) => {
         ? Math.min(120_000, Math.max(5_000, body.turnTimeoutMs))
         : undefined,
     persist: body.persist === true,
+    // The client sends -1 for "no spectators" and omits the field for unlimited
+    // (0 would be ambiguous with "none"). Normalize to: undefined = unlimited,
+    // 0 = none, n>0 = cap. Clamp to a sane ceiling.
+    maxSpectators:
+      typeof body.maxSpectators === 'number' && body.maxSpectators !== 0
+        ? Math.min(500, Math.max(0, body.maxSpectators === -1 ? 0 : body.maxSpectators))
+        : undefined,
   }
 
   const roomId = hub.createRoom(config, body.customId)
