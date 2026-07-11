@@ -5,6 +5,12 @@
  * transport, which is shared with offline play. This route is a DUMB relay for a
  * WebRTC mesh — it carries no audio, only SDP/ICE. Media flows peer-to-peer.
  *
+ * NAT note: this is SIGNALLING ONLY + a public STUN server (in the client), so
+ * audio is DIRECT P2P. Peers behind symmetric NAT / restrictive firewalls may
+ * fail to connect (they'll be in-voice but silent). Adding a TURN server, or
+ * switching to Conduit's relay-capable media API (@conduit/client `.call()`),
+ * would give a fallback path — deferred until it's actually needed.
+ *
  * Protocol (client → server):
  *   { t: 'join',   roomId, peerId, name }   → join a voice room
  *   { t: 'signal', to, from, data }          → forward SDP/ICE to one peer

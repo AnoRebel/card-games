@@ -189,9 +189,17 @@ export function useVoiceChat(opts: UseVoiceChatOptions) {
   }
 
   async function onSignal(from: string, data: unknown) {
-    const conn = conns.get(from)
-    if (!conn) return
     const payload = data as { sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }
+    // An offer can race ahead of the `joined`/`peers` message that would have
+    // created this peer (server fan-out order isn't guaranteed). Rather than
+    // drop it — which would strand a listed-but-silent peer — create the conn
+    // lazily so the answer path can run. A stray candidate with no conn is still
+    // ignored (its offer will arrive and set things up).
+    let conn = conns.get(from)
+    if (!conn) {
+      if (!payload.sdp || payload.sdp.type !== 'offer') return
+      conn = createPeer(from, from)
+    }
     try {
       if (payload.sdp) {
         await conn.pc.setRemoteDescription(payload.sdp)
@@ -230,7 +238,11 @@ export function useVoiceChat(opts: UseVoiceChatOptions) {
     if (t === 'peers') {
       const list = Array.isArray(msg.peers) ? (msg.peers as { peerId: string; name: string }[]) : []
       for (const p of list) {
-        if (p.peerId === myId || conns.has(p.peerId)) continue
+        if (p.peerId === myId) continue
+        // A lazily-created conn (from an early offer) may already exist with the
+        // peerId as a placeholder name — adopt the real name, don't re-create.
+        const existing = conns.get(p.peerId)
+        if (existing) { existing.name = p.name; syncPeers(); continue }
         const conn = createPeer(p.peerId, p.name)
         if (shouldOffer(p.peerId)) void makeOffer(conn)
       }
@@ -238,7 +250,9 @@ export function useVoiceChat(opts: UseVoiceChatOptions) {
     } else if (t === 'joined') {
       const peerId = typeof msg.peerId === 'string' ? msg.peerId : ''
       const name = typeof msg.name === 'string' ? msg.name : ''
-      if (!peerId || peerId === myId || conns.has(peerId)) return
+      if (!peerId || peerId === myId) return
+      const existing = conns.get(peerId)
+      if (existing) { existing.name = name; syncPeers(); return }
       const conn = createPeer(peerId, name)
       if (shouldOffer(peerId)) void makeOffer(conn)
     } else if (t === 'left') {
