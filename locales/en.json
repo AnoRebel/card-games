@@ -40,7 +40,10 @@
     "share": "Share",
     "copyLink": "Copy link",
     "scanToJoin": "Scan to join the game",
-    "shareText": "Join my card game!"
+    "shareText": "Join my card game!",
+    "playerLink": "Player link",
+    "spectatorLink": "Spectator link",
+    "showQr": "Show QR"
   },
   "profile": {
     "title": "Profile",
@@ -74,7 +77,12 @@
     "bidding": "Otea bidding",
     "turnTimer": "Turn timer",
     "timerOff": "No limit",
-    "timerSec": "{n}s per turn"
+    "timerSec": "{n}s per turn",
+    "maxSpectators": "Spectator limit",
+    "spectatorsUnlimited": "No limit",
+    "spectatorsNone": "None",
+    "persistRoom": "Keep room open",
+    "persistRoomHint": "Stays alive when empty; otherwise it's closed shortly after everyone leaves."
   },
   "room": {
     "aboutLinks": "About room links",
@@ -213,7 +221,11 @@
     "scopePrivate": "Private",
     "scopeOffline": "Offline",
     "scopeGlobal": "Global",
-    "globalUnavailable": "The global leaderboard isn't available right now."
+    "globalUnavailable": "The global leaderboard isn't available right now.",
+    "scopeMine": "My games",
+    "scopeMineOffline": "My offline",
+    "globalCaption": "Ranked online matches, shared by everyone.",
+    "localCaption": "Games played on this device only."
   },
   "tutorial": {
     "offerTitle": "New here?",
@@ -235,5 +247,18 @@
     "reload": "Reload",
     "installPrompt": "Install Card Games",
     "install": "Install"
+  },
+  "voice": {
+    "voice": "Voice",
+    "join": "Join voice",
+    "leave": "Leave voice",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "muted": "Muted",
+    "speaking": "Speaking",
+    "connecting": "Connecting…",
+    "micDenied": "Microphone access was denied.",
+    "unsupported": "Voice chat is not supported on this browser.",
+    "inVoice": "{count} in voice"
   }
 }

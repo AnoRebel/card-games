@@ -123,9 +123,11 @@ onBeforeUnmount(() => offConn?.())
       </template>
     </UPopover>
 
-    <!-- Share controls: PLAYERS only (spectators can't invite). -->
+    <!-- Share controls: PLAYERS only (spectators can't invite). The QR popover
+         carries both the player and spectator links (QR + copy + native share);
+         the passcode stays a separate chip since it's not a link. -->
     <template v-if="!amSpectator">
-      <RoomShare :share-url="shareUrl" :title="$t('app.title')" />
+      <RoomShare :share-url="shareUrl" :spectator-url="spectatorUrl || undefined" :title="$t('app.title')" />
       <UButton
         v-if="passcode"
         size="xs"
@@ -136,26 +138,6 @@ onBeforeUnmount(() => offConn?.())
         @click="copyAs('code', passcode)"
       >
         {{ copiedKey === 'code' ? $t('game.copied') : passcode }}
-      </UButton>
-      <UButton
-        size="xs"
-        variant="outline"
-        icon="i-lucide-link"
-        :title="$t('room.copyPlayerLink')"
-        @click="copyAs('player', shareUrl)"
-      >
-        {{ copiedKey === 'player' ? $t('game.copied') : $t('game.playerLink') }}
-      </UButton>
-      <UButton
-        v-if="spectatorUrl"
-        size="xs"
-        variant="outline"
-        color="neutral"
-        icon="i-lucide-eye"
-        :title="$t('room.copySpectatorLink')"
-        @click="copyAs('spectator', spectatorUrl)"
-      >
-        {{ copiedKey === 'spectator' ? $t('game.copied') : $t('game.spectatorLink') }}
       </UButton>
     </template>
 

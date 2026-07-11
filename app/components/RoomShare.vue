@@ -1,42 +1,82 @@
 <script setup lang="ts">
 /**
- * Frictionless room invites: a QR code (scan to join — great across a table) and
- * a native share-sheet button on supporting devices, both wrapped in a popover
- * off a single "Invite" button. Falls back to copy where share isn't available.
+ * Frictionless room invites. Shows a QR for the PLAYER link and, when the room
+ * allows watchers, a second tab with a QR for the SPECTATOR link — scanning is
+ * the fastest way to hand a room to someone across a table. Native share where
+ * supported, copy everywhere.
  */
 import { renderSVG } from 'uqr'
 
-const props = defineProps<{ shareUrl: string; title?: string }>()
+const props = defineProps<{
+  shareUrl: string
+  /** Watch-only link. Omit when the room has no spectator link to hand out. */
+  spectatorUrl?: string
+  title?: string
+}>()
 const { $t } = useI18n()
 const { track } = useAnalytics()
 const { share, isSupported: canShare } = useShare()
-const { copy, copied } = useClipboard({ source: () => props.shareUrl })
+
+type Kind = 'player' | 'spectator'
+const kind = ref<Kind>('player')
+// A room with spectators disabled has no second link — don't offer the tab.
+const hasSpectator = computed(() => !!props.spectatorUrl)
+watch(hasSpectator, (has) => { if (!has) kind.value = 'player' })
+
+const activeUrl = computed(() =>
+  kind.value === 'spectator' && props.spectatorUrl ? props.spectatorUrl : props.shareUrl,
+)
+
+const { copy, copied } = useClipboard({ source: () => activeUrl.value })
 
 // QR as an inline SVG data string (no network, no image asset).
 const qrSvg = computed(() => {
-  if (!props.shareUrl) return ''
+  if (!activeUrl.value) return ''
   try {
-    return renderSVG(props.shareUrl, { border: 2 })
+    return renderSVG(activeUrl.value, { border: 2 })
   } catch {
     return ''
   }
 })
 
 async function nativeShare() {
-  track('share_link_copied', { kind: 'native' })
+  track('share_link_copied', { kind: `native-${kind.value}` })
   try {
-    await share({ title: props.title ?? 'Card Games', text: $t('invite.shareText'), url: props.shareUrl })
+    await share({ title: props.title ?? 'Card Games', text: $t('invite.shareText'), url: activeUrl.value })
   } catch { /* user cancelled */ }
 }
 </script>
 
 <template>
   <UPopover>
-    <UButton size="xs" variant="soft" color="primary" icon="i-lucide-user-plus">
+    <UButton size="xs" variant="soft" color="primary" icon="i-lucide-qr-code">
       {{ $t('invite.invite') }}
     </UButton>
     <template #content>
-      <div class="p-3 space-y-3 w-56 text-center">
+      <div class="p-3 space-y-3 w-60 text-center">
+        <UFieldGroup v-if="hasSpectator" class="w-full">
+          <UButton
+            size="xs"
+            class="flex-1 justify-center"
+            icon="i-lucide-user"
+            :variant="kind === 'player' ? 'solid' : 'outline'"
+            :color="kind === 'player' ? 'primary' : 'neutral'"
+            @click="kind = 'player'"
+          >
+            {{ $t('invite.playerLink') }}
+          </UButton>
+          <UButton
+            size="xs"
+            class="flex-1 justify-center"
+            icon="i-lucide-eye"
+            :variant="kind === 'spectator' ? 'solid' : 'outline'"
+            :color="kind === 'spectator' ? 'primary' : 'neutral'"
+            @click="kind = 'spectator'"
+          >
+            {{ $t('invite.spectatorLink') }}
+          </UButton>
+        </UFieldGroup>
+
         <p class="text-xs font-medium" :style="{ color: 'var(--cg-text-muted)' }">
           {{ $t('invite.scanToJoin') }}
         </p>

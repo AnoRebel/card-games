@@ -40,7 +40,10 @@
     "share": "Shiriki",
     "copyLink": "Nakili kiungo",
     "scanToJoin": "Skani ili kujiunga na mchezo",
-    "shareText": "Jiunge na mchezo wangu wa karata!"
+    "shareText": "Jiunge na mchezo wangu wa karata!",
+    "playerLink": "Kiungo cha mchezaji",
+    "spectatorLink": "Kiungo cha mtazamaji",
+    "showQr": "Onyesha QR"
   },
   "profile": {
     "title": "Wasifu",
@@ -74,7 +77,12 @@
     "bidding": "Kuotea",
     "turnTimer": "Muda wa zamu",
     "timerOff": "Hakuna kikomo",
-    "timerSec": "Sekunde {n} kwa zamu"
+    "timerSec": "Sekunde {n} kwa zamu",
+    "maxSpectators": "Kikomo cha watazamaji",
+    "spectatorsUnlimited": "Hakuna kikomo",
+    "spectatorsNone": "Hakuna",
+    "persistRoom": "Weka chumba wazi",
+    "persistRoomHint": "Hubaki hai kikiwa tupu; vinginevyo hufungwa muda mfupi baada ya wote kuondoka."
   },
   "room": {
     "aboutLinks": "Kuhusu viungo vya chumba",
@@ -213,7 +221,11 @@
     "scopePrivate": "Faragha",
     "scopeOffline": "Nje ya mtandao",
     "scopeGlobal": "Kimataifa",
-    "globalUnavailable": "Ubao wa washindi wa kimataifa haupatikani kwa sasa."
+    "globalUnavailable": "Ubao wa washindi wa kimataifa haupatikani kwa sasa.",
+    "scopeMine": "Michezo yangu",
+    "scopeMineOffline": "Yangu nje ya mtandao",
+    "globalCaption": "Michezo ya mtandaoni yenye viwango, inayoshirikiwa na wote.",
+    "localCaption": "Michezo iliyochezwa kwenye kifaa hiki pekee."
   },
   "tutorial": {
     "offerTitle": "Mgeni hapa?",
@@ -235,5 +247,18 @@
     "reload": "Pakia upya",
     "installPrompt": "Sakinisha Card Games",
     "install": "Sakinisha"
+  },
+  "voice": {
+    "voice": "Sauti",
+    "join": "Jiunge na sauti",
+    "leave": "Ondoka kwenye sauti",
+    "mute": "Zima sauti",
+    "unmute": "Washa sauti",
+    "muted": "Imezimwa",
+    "speaking": "Anaongea",
+    "connecting": "Inaunganisha…",
+    "micDenied": "Ruhusa ya maikrofoni imekataliwa.",
+    "unsupported": "Mazungumzo ya sauti hayatumiki kwenye kivinjari hiki.",
+    "inVoice": "{count} kwenye sauti"
   }
 }
