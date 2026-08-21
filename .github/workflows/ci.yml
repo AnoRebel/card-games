@@ -28,10 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # No bun-version pin: setup-bun reads package.json's `packageManager`
+      # field, so the toolchain version lives in exactly one place. Pinning it
+      # here as well let the two drift (CI ran 1.3.14 against a bun@1.4.0 pin),
+      # which is the kind of gap that surfaces on a lockfile-format change.
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.14"
 
       # Cache the global bun install store keyed on the lockfile.
       - name: Cache dependencies
