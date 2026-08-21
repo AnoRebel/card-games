@@ -17,6 +17,7 @@ const props = defineProps<{
 const session = useGameSession(props.transport)
 const { copy } = useClipboard()
 const { track } = useAnalytics()
+const { $t } = useI18n()
 const copiedKey = ref<string | null>(null)
 
 function copyAs(key: string, value: string) {
@@ -41,6 +42,14 @@ const minPlayers = computed(() => info.value?.minPlayers ?? 2)
 const canStart = computed(
   () => isHost.value && phase.value === 'lobby' && seated.value >= minPlayers.value,
 )
+// Explain WHY start is unavailable. Once the game has left the lobby the reason
+// is that it's already running — not a shortage of players, which is what the
+// bare "need players" fallback used to (misleadingly) claim.
+const startTitle = computed(() => {
+  if (canStart.value) return $t('room.startGame')
+  if (phase.value !== 'lobby') return $t('room.alreadyStarted')
+  return $t('room.needPlayers', { min: minPlayers.value })
+})
 
 // Reconnect countdown: when a seated player drops mid-game the server sets a
 // grace deadline; show a live countdown so everyone knows the game will end if
@@ -150,7 +159,7 @@ onBeforeUnmount(() => offConn?.())
         color="primary"
         icon="i-lucide-play"
         :disabled="!canStart"
-        :title="canStart ? $t('room.startGame') : $t('room.needPlayers', { min: minPlayers })"
+        :title="startTitle"
         @click="transport.startGame()"
       >
         {{ $t('common.start') }}

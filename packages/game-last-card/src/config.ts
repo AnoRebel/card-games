@@ -37,6 +37,25 @@ export interface LastCardConfig {
   skipCards: Rank[]
   /** Ranks that reverse play direction. */
   reverseCards: Rank[]
+
+  /**
+   * Allow ANY player holding a matching skip/reverse card to interject it onto a
+   * pending skip/reverse chain, out of turn. Each interjected skip pushes the
+   * stop one seat further (and stops everyone it passes through); each
+   * interjected reverse flips the direction again. The seat the stop currently
+   * rests on may interject too — "stopping themselves" to forfeit their own turn
+   * and send the stop onward.
+   *
+   * Skip/reverse chains are SEPARATE from the pickup chain: neither may be
+   * played onto a pending pickup, and pickups may not be played onto them.
+   */
+  allowActionInterjection: boolean
+  /**
+   * Milliseconds the interjection window stays open before the chain resolves
+   * automatically. 0 = no timer: the window stays open until every eligible
+   * player has passed (host preference).
+   */
+  interjectionWindowMs: number
   /** Ranks that let the player nominate the next suit (wild). */
   suitChangeCards: Rank[]
 
@@ -74,6 +93,8 @@ export function defaultLastCardConfig(): LastCardConfig {
     allowPickupStacking: true,
     skipCards: [7],
     reverseCards: [8],
+    allowActionInterjection: true,
+    interjectionWindowMs: 0,
     suitChangeCards: [11], // Jack
     requireLastCardCall: true,
     missedCallPenalty: 2,

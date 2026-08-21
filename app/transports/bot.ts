@@ -57,6 +57,17 @@ export function chooseBotMove<S extends BaseGameState, M extends BaseMove, C>(
   const standaloneDeclare = moves.find((m) => m.type === 'declare-last-card')
   if (standaloneDeclare) return standaloneDeclare
 
+  // Skip/reverse interjection window. A bot that never answers would leave the
+  // chain mechanic dead in offline play, so interject when it's clearly good and
+  // otherwise pass promptly (never stall the window).
+  const interjections = moves.filter((m) => m.type === 'interject')
+  if (interjections.length) {
+    const choice = interjectionPolicy(state, seat, interjections, difficulty)
+    if (choice) return choice
+    const pass = moves.find((m) => m.type === 'pass-interjection')
+    if (pass) return pass
+  }
+
   if (difficulty !== 'easy') {
     const gameId = (state as { gameId?: string }).gameId
     const smart =
@@ -107,6 +118,64 @@ function lastCardPolicy<S extends BaseGameState, M extends BaseMove>(
   const maxShed = Math.max(...plays.map(shedCount))
   const best = plays.filter((m) => shedCount(m) === maxShed)
   return pick(best, state.version) ?? best[0]!
+}
+
+// ---- skip/reverse interjection policy --------------------------------------
+
+/**
+ * Whether to spend a 7/8 answering an open chain.
+ *
+ * Interjecting always costs a card, and in Last Card raw shedding speed wins, so
+ * spending one is only worth it when it buys a turn back or dodges a stop:
+ *
+ *  - skip chain: interject when the stop currently points AT US. Playing the 7
+ *    sheds a card AND moves the stop onward instead of us losing the turn.
+ *  - reverse chain: interject when flipping brings the turn back to us.
+ *
+ * Easy bots never interject (they simply pass), which keeps them readable.
+ */
+function interjectionPolicy<S extends BaseGameState, M extends BaseMove>(
+  state: S,
+  seat: Seat,
+  interjections: M[],
+  difficulty: BotDifficulty,
+): M | null {
+  if (difficulty === 'easy') return null
+  const s = state as unknown as {
+    pendingAction: { kind: 'skip' | 'reverse'; origin: Seat; count: number } | null
+    players: { seat: Seat }[]
+    direction: 1 | -1
+  }
+  const chain = s.pendingAction
+  if (!chain) return null
+
+  const n = s.players.length
+  const stepFrom = (from: Seat, steps: number, dir: 1 | -1): Seat =>
+    (((from + dir * steps) % n) + n) % n
+
+  let worth: boolean
+  if (chain.kind === 'skip') {
+    // Every seat the stop passes through is stopped: origin+1 … origin+count.
+    worth = Array.from({ length: chain.count }, (_, i) =>
+      stepFrom(chain.origin, i + 1, s.direction),
+    ).includes(seat)
+  } else {
+    // Would adding one more flip hand the turn to us?
+    const flipped = (chain.count + 1) % 2 === 1
+    const dir = (flipped ? s.direction * -1 : s.direction) as 1 | -1
+    worth =
+      n === 2
+        ? stepFrom(chain.origin, chain.count + 2, s.direction) === seat
+        : stepFrom(chain.origin, 1, dir) === seat
+  }
+  if (!worth) return null
+
+  // Prefer an interjection that also lets us declare our last card.
+  const declaring = interjections.filter(
+    (m) => (m as { declareLastCard?: boolean }).declareLastCard === true,
+  )
+  const pool = declaring.length ? declaring : interjections
+  return pick(pool, state.version) ?? pool[0] ?? null
 }
 
 // ---- Albastini policy ------------------------------------------------------

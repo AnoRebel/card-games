@@ -34,8 +34,8 @@ export const lastCardRules: RulesSection[] = [
     body: [
       '2 — the next player picks up 2 (these stack).',
       'Joker — the next player picks up 5. A Joker can stack onto a pending 2 (2 + 5 = 7), but a 2 cannot stack onto a Joker.',
-      '7 — skips the next player.',
-      '8 — reverses the direction of play.',
+      '7 — stops the next player. Anyone else holding a 7 can add it to push the stop further along — even the player being stopped, who forfeits their turn to send it on.',
+      '8 — reverses the direction of play, and anyone holding an 8 can add it to flip again. With two players an 8 acts as a stop, so you play again; two 8s hand the turn back.',
       'Jack — change the suit to one of your choosing.',
     ],
   },
@@ -107,8 +107,8 @@ export const lastCardRulesSw: RulesSection[] = [
     body: [
       '2 — mchezaji anayefuata huchukua karata 2 (hizi hurundikana).',
       'Joka — mchezaji anayefuata huchukua karata 5. Joka laweza kurundikwa juu ya 2 iliyosubiri (2 + 5 = 7), lakini 2 haiwezi kurundikwa juu ya Joka.',
-      '7 — huruka mchezaji anayefuata.',
-      '8 — hubadili mwelekeo wa mchezo.',
+      '7 — humzuia mchezaji anayefuata. Mwenye 7 yeyote aweza kuiongeza kusukuma kizuizi mbele — hata yule anayezuiwa, akiacha zamu yake kukipeleka mbele.',
+      '8 — hubadili mwelekeo wa mchezo, na mwenye 8 yeyote aweza kuiongeza kugeuza tena. Kwa wachezaji wawili, 8 hufanya kama kizuizi, hivyo wacheza tena; 8 mbili hurudisha zamu.',
       'Jeki — badili aina kuwa unayoichagua.',
     ],
   },

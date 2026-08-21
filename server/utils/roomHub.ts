@@ -208,7 +208,10 @@ export class RoomHub {
       const game = requireGame(r.config.gameId)
       const moves = game.getLegalMoves(r.state, active)
       if (!moves.length) return
-      const res = applyMove(game, r.state, moves[0]!)
+      // On a skip/reverse interjection window, timing out must PASS — never
+      // spend the player's card for them. Elsewhere the first legal move stands.
+      const auto = moves.find((m) => m.type === 'pass-interjection') ?? moves[0]!
+      const res = applyMove(game, r.state, auto)
       if (!res.ok) return
       r.state = res.state
       log.info(`turn timeout: auto-played for seat ${active} in room ${roomId}`)

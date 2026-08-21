@@ -68,6 +68,46 @@ async function callLastCard() {
   if (declareMove.value) await session.play(declareMove.value)
 }
 
+// --- skip/reverse interjection ----------------------------------------------
+// While a 7/8 chain is open the engine parks `activeSeat` on whoever must
+// respond, so `isMyTurn` already covers "am I being asked". The viewer may add a
+// matching card (pushing the stop / flipping direction again) or pass.
+const interjectMoves = computed(() =>
+  legalMoves.value.filter((m: LastCardMove) => m.type === 'interject'),
+)
+const passInterjection = computed(
+  () => legalMoves.value.find((m: LastCardMove) => m.type === 'pass-interjection') ?? null,
+)
+const pendingChain = computed(() => lc.value.pendingAction ?? null)
+/** Cards that can answer the open chain — highlighted in hand. */
+const interjectableIds = computed(() => {
+  const ids = new Set<string>()
+  for (const m of interjectMoves.value as LastCardMove[]) {
+    if (m.type === 'interject') ids.add(cardId(m.card))
+  }
+  return ids
+})
+async function interject(card: Card) {
+  const move = interjectMoves.value.find(
+    (m: LastCardMove) => m.type === 'interject' && cardId(m.card) === cardId(card),
+  )
+  if (!move) return
+  // Interjecting can reach the last card(s) — offer the call, same as a play.
+  const declare = interjectMoves.value.find(
+    (m: LastCardMove) =>
+      m.type === 'interject' &&
+      m.declareLastCard === true &&
+      cardId(m.card) === cardId(card),
+  )
+  await flyToDiscard(card)
+  flownByLocal = cardId(card)
+  const res = await session.play(declare ?? move)
+  if (!res.ok && flownByLocal === cardId(card)) flownByLocal = null
+}
+async function declineInterjection() {
+  if (passInterjection.value) await session.play(passInterjection.value)
+}
+
 // --- move log ---------------------------------------------------------------
 const log = useMoveLog<LastCardState>((prev, next) => {
   if (!prev || !next.discardPile) return null
@@ -515,6 +555,25 @@ async function draw() {
       </button>
     </div>
 
+    <!-- Skip/reverse interjection window: you hold a matching card and may add
+         it to the chain, or pass and let it resolve. -->
+    <div v-if="pendingChain && isMyTurn && passInterjection" class="flex flex-col items-center gap-2">
+      <span class="text-xs font-semibold" :style="{ color: 'var(--cg-text-muted)' }">
+        {{ pendingChain.kind === 'skip'
+          ? $t('game.interjectSkipPrompt', { n: pendingChain.count })
+          : $t('game.interjectReversePrompt', { n: pendingChain.count }) }}
+      </span>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5"
+        :style="{ color: 'var(--cg-text-muted)', border: '1px solid var(--cg-border)' }"
+        @click="declineInterjection"
+      >
+        <UIcon name="i-lucide-skip-forward" />
+        {{ $t('game.interjectPass') }}
+      </button>
+    </div>
+
     <!-- Turn pill -->
     <div class="flex justify-center">
       <span
@@ -549,10 +608,10 @@ async function draw() {
     <GestureHand
       ref="handRef"
       :cards="myHand"
-      :playable-ids="playableIds"
+      :playable-ids="pendingChain ? interjectableIds : playableIds"
       :enabled="isMyTurn"
       :width="100"
-      @play="playCardMove"
+      @play="pendingChain ? interject($event) : playCardMove($event)"
     />
 
     <!-- Suit chooser -->

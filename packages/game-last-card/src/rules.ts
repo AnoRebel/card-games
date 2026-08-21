@@ -13,11 +13,12 @@ import {
   createRng,
   isJoker,
   nextSeat,
+  seatOrder,
   shuffle,
   standardDeck,
 } from '@card-games/engine-core'
 import { type LastCardConfig, cardPenaltyValue, defaultLastCardConfig } from './config'
-import type { LastCardMove, LastCardState } from './state'
+import type { LastCardMove, LastCardState, PendingActionChain } from './state'
 
 // A card's config "rank key": jokers use 0 (their placeholder rank), so all the
 // rank-keyed config lists (pickup/skip/reverse/suit-change) target them via 0.
@@ -152,6 +153,7 @@ export function createInitialState(
     direction: 1,
     pendingPickup: 0,
     pendingPickupUnit: 0,
+    pendingAction: null,
     declaredLastCard: null,
     awaitingCall: null,
     round: 0,
@@ -177,9 +179,103 @@ function refillDrawPile(state: LastCardState): {
 
 const playerCount = (state: LastCardState) => state.players.length
 
+/**
+ * Does a card belong to `chain`'s rank family? Interjections match by RANK only
+ * (any 7 answers a 7, any 8 answers an 8) — suit is irrelevant, exactly as
+ * pickup stacking already works.
+ */
+function matchesChain(card: Card, chain: PendingActionChain, cfg: LastCardConfig): boolean {
+  return chain.kind === 'skip' ? isSkip(card, cfg) : isReverse(card, cfg)
+}
+
+/**
+ * With only two players a direction flip is a no-op — `nextSeat` lands on the
+ * same opponent either way, so a reverse would silently do nothing. The standard
+ * convention (and this project's rule) is that reverse then acts as a SKIP:
+ * one reverse returns the turn to the player, two pass it on.
+ */
+const reverseActsAsSkip = (state: LastCardState) => playerCount(state) === 2
+
+/**
+ * Seats that may still interject into `chain` — anyone holding a matching card
+ * who hasn't already passed. The seat the stop rests on is included: they may
+ * "stop themselves", forfeiting their turn to push it onward.
+ */
+function eligibleInterjectors(state: LastCardState, chain: PendingActionChain): Seat[] {
+  const cfg = state.config
+  if (!cfg.allowActionInterjection) return []
+  return state.players
+    .map((p) => p.seat)
+    .filter((seat) => {
+      if (chain.passed.includes(seat)) return false
+      const hand = state.hands[seat] ?? []
+      // A seat whose ONLY card is a chain card cannot legally play it (you may
+      // not go out on an action card), so it is NOT eligible. This must mirror
+      // getLegalMoves exactly: polling a seat with no playable move would park
+      // `activeSeat` on someone who cannot act and deadlock the game.
+      if (hand.length === 1 && !cfg.allowActionCardFinish) return false
+      return hand.some((c) => matchesChain(c, chain, cfg))
+    })
+}
+
+/**
+ * Resolve a fully-passed (or timed-out) chain: apply its accumulated effect and
+ * hand the turn to whoever is due to act, measured from the seat that opened it.
+ *
+ * Skip: the stop travels `count` seats and stops EVERY player it passes through,
+ * so play resumes `count + 1` seats along. Reverse: an odd count leaves the
+ * direction flipped, an even count restores it; in a 2-player game each reverse
+ * instead behaves as a skip, so the parity decides whether the turn comes back.
+ */
+function resolveChain(state: LastCardState, chain: PendingActionChain): void {
+  const count = playerCount(state)
+
+  if (chain.kind === 'reverse') {
+    if (reverseActsAsSkip(state)) {
+      // Heads-up: each reverse is a skip. An ODD number of skips bounces the
+      // turn back to the opener; an even number passes it to the opponent.
+      state.direction = chain.baseDirection
+      state.activeSeat = stepSeat(chain.origin, count, chain.count + 1, state.direction)
+    } else {
+      const flipped = chain.count % 2 === 1
+      state.direction = (flipped ? chain.baseDirection * -1 : chain.baseDirection) as 1 | -1
+      state.activeSeat = nextSeat(chain.origin, count, state.direction)
+    }
+  } else {
+    state.direction = chain.baseDirection
+    state.activeSeat = stepSeat(chain.origin, count, chain.count + 1, state.direction)
+  }
+
+  state.pendingAction = null
+}
+
+/**
+ * Close the chain if nobody eligible is left to interject; otherwise park
+ * `activeSeat` on the next seat that must respond.
+ *
+ * Keeping `activeSeat` pointed at a real responder is load-bearing: every client
+ * (turn banner, bot scheduler, room hub) derives "who acts now" from it, so a
+ * chain that left it stale would never prompt anyone and the game would stall.
+ * Responders are polled in seating order from the chain's origin so the sequence
+ * is deterministic and every eligible seat gets exactly one say per extension.
+ */
+function settleChain(state: LastCardState): void {
+  const chain = state.pendingAction
+  if (!chain) return
+  const eligible = eligibleInterjectors(state, chain)
+  if (eligible.length === 0) {
+    resolveChain(state, chain)
+    return
+  }
+  const count = playerCount(state)
+  const order = seatOrder(nextSeat(chain.origin, count, state.direction), count, state.direction)
+  state.activeSeat = order.find((s) => eligible.includes(s)) ?? eligible[0]!
+}
+
 /** Legal moves for `seat`. */
 export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] {
   if (state.phase === 'finished') return []
+  const cfg = state.config
 
   // A seat that reduced to its last card(s) (a single card, or one same-rank
   // group) but hasn't declared may call "Last Card" OUT OF TURN — before the
@@ -192,10 +288,45 @@ export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] 
       ? [{ type: 'declare-last-card', seat }]
       : []
 
+  const hand = state.hands[seat] ?? []
+
+  // An open skip/reverse chain SUSPENDS normal play: nobody takes a regular
+  // turn until it resolves. Any eligible seat (including the one the stop rests
+  // on) may interject a matching card or pass.
+  const chain = state.pendingAction
+  if (chain) {
+    if (!cfg.allowActionInterjection || chain.passed.includes(seat)) return declareMoves
+    // Only the seat currently being asked may act, so responses stay ordered and
+    // clients never race. `settleChain` parks `activeSeat` on that seat.
+    if (state.activeSeat !== seat) return declareMoves
+    const matching = hand.filter((c) => matchesChain(c, chain, cfg))
+    if (!matching.length) return declareMoves
+
+    const moves: LastCardMove[] = [...declareMoves]
+    const seenRankSuit = new Set<string>()
+    for (const card of matching) {
+      // One option per distinct card identity; a chain card's suit still becomes
+      // the new active suit, so different suits are genuinely different moves.
+      if (seenRankSuit.has(cardId(card))) continue
+      seenRankSuit.add(cardId(card))
+      // You cannot go out on an action card unless the variant allows it — an
+      // interjection is a play like any other.
+      if (hand.length === 1 && !cfg.allowActionCardFinish) continue
+      const base = { type: 'interject' as const, seat, card }
+      moves.push(base)
+      const remainder = hand.filter((c) => cardId(c) !== cardId(card))
+      if (cfg.requireLastCardCall && remainder.length >= 1 && isLastGroup(remainder, cfg)) {
+        moves.push({ ...base, declareLastCard: true })
+      }
+    }
+    if (moves.length > declareMoves.length) {
+      moves.push({ type: 'pass-interjection', seat })
+    }
+    return moves
+  }
+
   // Off-turn: the only thing you may do is call your last card.
   if (state.activeSeat !== seat) return declareMoves
-
-  const hand = state.hands[seat] ?? []
   const moves: LastCardMove[] = [...declareMoves]
 
   const isAction = (c: Card) =>
@@ -316,6 +447,48 @@ function tallyRound(state: LastCardState, winner: Seat): Record<Seat, number> {
   return cumulative
 }
 
+/**
+ * End the round for `winner` (their hand is empty): tally scores, then either
+ * finish the match or deal the next round rotating the first player.
+ */
+function finishRound(
+  next: LastCardState,
+  winner: Seat,
+  cfg: LastCardConfig,
+  count: number,
+): ReducerResult<LastCardState> {
+  next.roundWinner = winner
+  // The winner's hand is empty; any obligation their final card created dies
+  // with the round.
+  next.pendingPickup = 0
+  next.pendingPickupUnit = 0
+  next.pendingAction = null
+  next.awaitingCall = null
+  next.cumulativeScores = tallyRound(next, winner)
+  if (next.round + 1 >= cfg.rounds) {
+    next.phase = 'finished'
+    next.activeSeat = null
+    return { ok: true, state: next }
+  }
+  // Start the next round, rotating the dealer/first player.
+  const reseed = createRng(next.rng.seed ^ (next.round + 1))
+  const dealt = dealRound(next.players, cfg, reseed)
+  next.hands = dealt.hands
+  next.drawPile = dealt.drawPile
+  next.discardPile = dealt.discardPile
+  next.activeSuit = dealt.activeSuit
+  next.rng = dealt.rng
+  next.round += 1
+  next.pendingPickup = 0
+  next.pendingPickupUnit = 0
+  next.direction = 1
+  next.declaredLastCard = null
+  next.awaitingCall = null
+  next.roundWinner = null
+  next.activeSeat = next.players[next.round % count]!.seat
+  return { ok: true, state: next }
+}
+
 /** The reducer. */
 export function reducer(
   state: LastCardState,
@@ -327,7 +500,95 @@ export function reducer(
   const cfg = state.config
   const count = playerCount(state)
 
+  // While a skip/reverse chain is open, normal play is suspended — only chain
+  // moves (and the always-allowed last-card call) may be made.
+  if (
+    state.pendingAction &&
+    move.type !== 'interject' &&
+    move.type !== 'pass-interjection' &&
+    move.type !== 'declare-last-card'
+  ) {
+    return { ok: false, error: 'An action chain is pending', state }
+  }
+
   switch (move.type) {
+    case 'interject': {
+      const chain = state.pendingAction
+      if (!chain) return { ok: false, error: 'No pending action to interject', state }
+      if (!cfg.allowActionInterjection) {
+        return { ok: false, error: 'Interjection is not allowed', state }
+      }
+      if (chain.passed.includes(move.seat)) {
+        return { ok: false, error: 'Already passed on this chain', state }
+      }
+      const hand = state.hands[move.seat] ?? []
+      const idx = hand.findIndex((c) => cardId(c) === cardId(move.card))
+      if (idx === -1) return { ok: false, error: 'Card not in hand', state }
+      if (!matchesChain(move.card, chain, cfg)) {
+        return { ok: false, error: 'Card does not match the pending action', state }
+      }
+      if (hand.length === 1 && !cfg.allowActionCardFinish) {
+        return { ok: false, error: 'Cannot go out on an action card', state }
+      }
+
+      const next = clone(state)
+      applyMissedCall(next, move.seat)
+
+      next.hands[move.seat] = next.hands[move.seat]!.filter(
+        (c) => cardId(c) !== cardId(move.card),
+      )
+      next.discardPile.push(move.card)
+      // The interjected card is now the top card, so it sets the active suit.
+      next.activeSuit = move.card.suit
+
+      // Extend the chain. Everyone who previously passed gets another say: the
+      // chain has changed, so a seat that declined at count 1 may well want to
+      // answer at count 2. Only the interjector is committed.
+      const extended: PendingActionChain = {
+        ...chain,
+        count: chain.count + 1,
+        passed: [move.seat],
+      }
+      next.pendingAction = extended
+
+      const remainingHand = next.hands[move.seat]!
+      if (
+        remainingHand.length >= 1 &&
+        isLastGroup(remainingHand, cfg) &&
+        cfg.requireLastCardCall
+      ) {
+        if (move.declareLastCard) {
+          next.declaredLastCard = move.seat
+          next.awaitingCall = null
+        } else {
+          next.awaitingCall = move.seat
+        }
+      }
+
+      // Interjecting can empty a hand (when allowActionCardFinish is on).
+      if (remainingHand.length === 0) {
+        next.pendingAction = null
+        return finishRound(next, move.seat, cfg, count)
+      }
+
+      settleChain(next)
+      return { ok: true, state: next }
+    }
+
+    case 'pass-interjection': {
+      const chain = state.pendingAction
+      if (!chain) return { ok: false, error: 'No pending action to pass on', state }
+      const next = clone(state)
+      if (!next.pendingAction!.passed.includes(move.seat)) {
+        next.pendingAction = {
+          ...next.pendingAction!,
+          passed: [...next.pendingAction!.passed, move.seat],
+        }
+      }
+      settleChain(next)
+      return { ok: true, state: next }
+    }
+
     case 'draw': {
       const next = clone(state)
 
@@ -432,11 +693,10 @@ export function reducer(
         next.activeSuit = topPlayed.suit
       } // else: joker on top → keep existing activeSuit
 
-      // Direction / pickup effects apply PER played card. Track the largest
-      // pickup unit played so stacking stays ordered (a later 2 can't undercut a
-      // Joker). Skip is applied via the turn-step math below (isSkip).
+      // Pickup effects apply PER played card. Track the largest pickup unit
+      // played so stacking stays ordered (a later 2 can't undercut a Joker).
+      // Skip/reverse are handled by the chain machinery below.
       for (const c of played) {
-        if (isReverse(c, cfg)) next.direction = (next.direction * -1) as 1 | -1
         const pk = isPickup(c, cfg)
         if (pk) {
           next.pendingPickup += pk.amount
@@ -458,42 +718,30 @@ export function reducer(
       }
 
       // Win check.
-      if (remaining === 0) {
-        next.roundWinner = move.seat
-        // The winner's hand is empty; any obligation their final card created
-        // dies with the round.
-        next.pendingPickup = 0
-        next.pendingPickupUnit = 0
-        next.awaitingCall = null
-        next.cumulativeScores = tallyRound(next, move.seat)
-        if (next.round + 1 >= cfg.rounds) {
-          next.phase = 'finished'
-          next.activeSeat = null
-          return { ok: true, state: next }
+      if (remaining === 0) return finishRound(next, move.seat, cfg, count)
+
+      // Skip / reverse open an interjection chain rather than resolving at once,
+      // so any other player holding a matching card can add to it. A hand can
+      // only ever contain one KIND here (a same-rank multi-play), so the chain's
+      // kind is unambiguous.
+      const skips = played.filter((c) => isSkip(c, cfg)).length
+      const reverses = played.filter((c) => isReverse(c, cfg)).length
+      if (skips > 0 || reverses > 0) {
+        const chain: PendingActionChain = {
+          kind: skips > 0 ? 'skip' : 'reverse',
+          origin: move.seat,
+          count: skips > 0 ? skips : reverses,
+          baseDirection: next.direction,
+          passed: [move.seat], // the opener already committed their cards
+          deadline: null,
         }
-        // Start the next round, rotating the dealer/first player.
-        const reseed = createRng(next.rng.seed ^ (next.round + 1))
-        const dealt = dealRound(next.players, cfg, reseed)
-        next.hands = dealt.hands
-        next.drawPile = dealt.drawPile
-        next.discardPile = dealt.discardPile
-        next.activeSuit = dealt.activeSuit
-        next.rng = dealt.rng
-        next.round += 1
-        next.pendingPickup = 0
-        next.pendingPickupUnit = 0
-        next.direction = 1
-        next.declaredLastCard = null
-        next.awaitingCall = null
-        next.roundWinner = null
-        next.activeSeat = next.players[next.round % count]!.seat
+        next.pendingAction = chain
+        // If nobody else can interject, resolve immediately — no dead window.
+        settleChain(next)
         return { ok: true, state: next }
       }
 
-      // Advance turn, skipping once per skip card played (each skip = +1 step).
-      const skips = played.filter((c) => isSkip(c, cfg)).length
-      const steps = 1 + skips
-      next.activeSeat = stepSeat(move.seat, count, steps, next.direction)
+      next.activeSeat = nextSeat(move.seat, count, next.direction)
       return { ok: true, state: next }
     }
   }

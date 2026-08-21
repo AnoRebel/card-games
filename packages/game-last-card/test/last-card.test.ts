@@ -143,18 +143,39 @@ describe('Last Card — action cards', () => {
     expect((r as { state: LastCardState }).state.activeSuit).toBe('d')
   })
 
-  it('an 8 skips the next player', () => {
+  it('an 8 REVERSES direction (it is not a skip)', () => {
     let s = init()
     s = {
       ...s,
       activeSeat: 0,
       activeSuit: 'h',
       discardPile: [{ rank: 5, suit: 'h' }],
+      // No opponent holds an 8, so the chain resolves immediately.
       hands: { 0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }], 1: [{ rank: 9, suit: 'c' }], 2: [{ rank: 9, suit: 'd' }] },
     }
     const r = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } } as LastCardMove)
     expect(r.ok).toBe(true)
-    expect((r as { state: LastCardState }).state.activeSeat).toBe(2) // 1 is skipped
+    const after = (r as { state: LastCardState }).state
+    // Direction flips to -1, so play goes 0 -> 2 (backwards), NOT because 1 was
+    // skipped. Seat 1 still gets a turn — after seat 2.
+    expect(after.direction).toBe(-1)
+    expect(after.activeSeat).toBe(2)
+  })
+
+  it('a 7 SKIPS the next player (direction unchanged)', () => {
+    let s = init()
+    s = {
+      ...s,
+      activeSeat: 0,
+      activeSuit: 'h',
+      discardPile: [{ rank: 5, suit: 'h' }],
+      hands: { 0: [{ rank: 7, suit: 'h' }, { rank: 9, suit: 'c' }], 1: [{ rank: 9, suit: 'c' }], 2: [{ rank: 9, suit: 'd' }] },
+    }
+    const r = applyMove(lastCardGame, s, { type: 'play', seat: 0, card: { rank: 7, suit: 'h' } } as LastCardMove)
+    expect(r.ok).toBe(true)
+    const after = (r as { state: LastCardState }).state
+    expect(after.direction).toBe(1)
+    expect(after.activeSeat).toBe(2) // seat 1 stopped
   })
 })
 
@@ -744,4 +765,303 @@ describe('Last Card — engine guarantees', () => {
     expect(view.drawPile.length).toBe(s.drawPile.length)
     expect(view.drawPile.every((c) => c.rank === 1 && c.suit === 'c')).toBe(true)
   })
+})
+
+// ---------------------------------------------------------------------------
+// Reverse in a 2-player game, and the skip/reverse interjection chains.
+// ---------------------------------------------------------------------------
+
+const players2: Player[] = [
+  { id: 'a', name: 'A', seat: 0 },
+  { id: 'b', name: 'B', seat: 1 },
+]
+
+/** Build a controlled state with a plain 5h on top and seat 0 to act. */
+const table = (ps: Player[], hands: Record<number, Card[]>, cfg = defaultLastCardConfig()) => {
+  const s = lastCardGame.createInitialState(cfg, ps, 'chain')
+  return {
+    ...s,
+    activeSeat: 0,
+    activeSuit: 'h',
+    discardPile: [{ rank: 5, suit: 'h' }],
+    hands,
+  } as LastCardState
+}
+
+const step = (s: LastCardState, m: LastCardMove): LastCardState => {
+  const r = applyMove(lastCardGame, s, m)
+  if (!r.ok) throw new Error(`move rejected: ${(r as { error: string }).error}`)
+  return (r as { state: LastCardState }).state
+}
+
+describe('Last Card — reverse with 2 players', () => {
+  it('a single 8 acts as a skip: the player goes again', () => {
+    const s = table(players2, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 'c' }], // no 8 → nobody can interject
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    expect(a.activeSeat).toBe(0) // turn bounces back — NOT a no-op
+  })
+
+  it('two 8s played together return the turn to the opponent', () => {
+    const s = table(players2, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 8, suit: 's' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 'c' }],
+    })
+    const a = step(s, {
+      type: 'play',
+      seat: 0,
+      card: { rank: 8, suit: 'h' },
+      extraCards: [{ rank: 8, suit: 's' }],
+    })
+    expect(a.activeSeat).toBe(1)
+  })
+})
+
+describe('Last Card — skip/reverse interjection', () => {
+  it('holding a matching 8 opens an out-of-turn interjection window', () => {
+    const s = table(players2, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 8, suit: 'c' }, { rank: 9, suit: 'd' }],
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    // The chain is OPEN — the turn has not advanced yet.
+    expect(a.pendingAction).not.toBeNull()
+    expect(a.pendingAction!.kind).toBe('reverse')
+    const moves = lastCardGame.getLegalMoves(a, 1)
+    expect(moves.some((m) => m.type === 'interject')).toBe(true)
+    expect(moves.some((m) => m.type === 'pass-interjection')).toBe(true)
+    // Regular play is NOT offered while the chain is open.
+    expect(moves.some((m) => m.type === 'play')).toBe(false)
+  })
+
+  it('passing on the chain resolves it', () => {
+    const s = table(players2, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 8, suit: 'c' }, { rank: 9, suit: 'd' }],
+    })
+    let a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    a = step(a, { type: 'pass-interjection', seat: 1 })
+    expect(a.pendingAction).toBeNull()
+    expect(a.activeSeat).toBe(0) // 2P single reverse = skip → back to seat 0
+  })
+
+  it('interjecting an 8 stacks it: two 8s hand the turn onward', () => {
+    const s = table(players2, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 8, suit: 'c' }, { rank: 9, suit: 'd' }],
+    })
+    let a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    a = step(a, { type: 'interject', seat: 1, card: { rank: 8, suit: 'c' } })
+    expect(a.pendingAction).toBeNull() // seat 0 has no 8 left → resolves
+    expect(a.pendingAction).toBeNull()
+    // Two reverses in a 2P game = two skips = turn passes to the opponent.
+    expect(a.activeSeat).toBe(1)
+    // The interjected card is on top and sets the suit.
+    expect(a.activeSuit).toBe('c')
+    expect(a.hands[1]!).toHaveLength(1)
+  })
+
+  it('a 3rd player can interject a 7, pushing the stop further along', () => {
+    const s = table(players, {
+      0: [{ rank: 7, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 'c' }, { rank: 9, suit: 's' }],
+      2: [{ rank: 7, suit: 'c' }, { rank: 9, suit: 'd' }], // holds a 7 → may interject
+    })
+    let a = step(s, { type: 'play', seat: 0, card: { rank: 7, suit: 'h' } })
+    expect(a.pendingAction!.kind).toBe('skip')
+    // Seat 2 pushes the stop on, even though the stop was aimed at seat 1.
+    a = step(a, { type: 'interject', seat: 2, card: { rank: 7, suit: 'c' } })
+    expect(a.pendingAction).toBeNull()
+    // Two 7s: the stop passes through seats 1 AND 2, so play resumes at seat 0.
+    expect(a.activeSeat).toBe(0)
+  })
+
+  it('the stopped player can stop THEMSELVES, forfeiting their turn to push it on', () => {
+    const s = table(players, {
+      0: [{ rank: 7, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 7, suit: 'c' }, { rank: 9, suit: 's' }], // the target holds a 7
+      2: [{ rank: 9, suit: 'd' }, { rank: 9, suit: 'h' }],
+    })
+    let a = step(s, { type: 'play', seat: 0, card: { rank: 7, suit: 'h' } })
+    a = step(a, { type: 'interject', seat: 1, card: { rank: 7, suit: 'c' } })
+    expect(a.pendingAction).toBeNull()
+    // Seats 1 and 2 are both stopped; play resumes at seat 0.
+    expect(a.activeSeat).toBe(0)
+    expect(a.hands[1]!).toHaveLength(1)
+  })
+
+  it('a chain nobody can answer resolves immediately (no dead window)', () => {
+    const s = table(players, {
+      0: [{ rank: 7, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 'c' }],
+      2: [{ rank: 9, suit: 'd' }],
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 7, suit: 'h' } })
+    expect(a.pendingAction).toBeNull()
+    expect(a.activeSeat).toBe(2)
+  })
+
+  it('a 7 cannot answer a reverse chain and vice versa (chains never mix)', () => {
+    const s = table(players, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 7, suit: 'c' }, { rank: 9, suit: 's' }], // only a 7
+      2: [{ rank: 8, suit: 'd' }, { rank: 9, suit: 'd' }], // holds an 8
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    const seat1 = lastCardGame.getLegalMoves(a, 1)
+    expect(seat1.some((m) => m.type === 'interject')).toBe(false) // 7 can't answer an 8
+    const seat2 = lastCardGame.getLegalMoves(a, 2)
+    expect(seat2.some((m) => m.type === 'interject')).toBe(true)
+    // A 7 is rejected outright by the reducer too.
+    const bad = applyMove(lastCardGame, a, {
+      type: 'interject',
+      seat: 1,
+      card: { rank: 7, suit: 'c' },
+    } as LastCardMove)
+    expect(bad.ok).toBe(false)
+  })
+
+  it('normal play is rejected while a chain is open', () => {
+    const s = table(players, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 'c' }, { rank: 9, suit: 's' }],
+      2: [{ rank: 8, suit: 'd' }, { rank: 9, suit: 'd' }],
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    expect(a.pendingAction).not.toBeNull()
+    const bad = applyMove(lastCardGame, a, {
+      type: 'play',
+      seat: 2,
+      card: { rank: 9, suit: 'd' },
+    } as LastCardMove)
+    expect(bad.ok).toBe(false)
+  })
+
+  it('interjection is blocked while a pickup penalty is pending (separate chains)', () => {
+    const s = table(players, {
+      0: [{ rank: 2, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 7, suit: 'c' }, { rank: 9, suit: 's' }],
+      2: [{ rank: 8, suit: 'd' }, { rank: 9, suit: 'd' }],
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 2, suit: 'h' } })
+    expect(a.pendingPickup).toBe(2)
+    expect(a.pendingAction).toBeNull()
+    // Seat 1 may only draw the penalty — a 7 is not a legal answer to a pickup.
+    const moves = lastCardGame.getLegalMoves(a, 1)
+    expect(moves.every((m) => m.type !== 'interject')).toBe(true)
+    expect(moves.some((m) => m.type === 'play')).toBe(false)
+  })
+
+  it('cannot go out on an interjected action card by default', () => {
+    const s = table(players, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 'c' }, { rank: 9, suit: 's' }],
+      2: [{ rank: 8, suit: 'd' }], // an 8 is their ONLY card
+    })
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    const moves = lastCardGame.getLegalMoves(a, 2)
+    expect(moves.some((m) => m.type === 'interject')).toBe(false)
+  })
+
+  it('disabling allowActionInterjection restores instant resolution', () => {
+    const cfg = { ...defaultLastCardConfig(), allowActionInterjection: false }
+    const s = table(
+      players,
+      {
+        0: [{ rank: 7, suit: 'h' }, { rank: 9, suit: 'c' }],
+        1: [{ rank: 7, suit: 'c' }, { rank: 9, suit: 's' }],
+        2: [{ rank: 9, suit: 'd' }, { rank: 9, suit: 'h' }],
+      },
+      cfg,
+    )
+    const a = step(s, { type: 'play', seat: 0, card: { rank: 7, suit: 'h' } })
+    expect(a.pendingAction).toBeNull()
+    expect(a.activeSeat).toBe(2) // seat 1 skipped, no window
+  })
+})
+
+describe('Last Card — chain termination', () => {
+  it('a chain always resolves even when every player interjects maximally', () => {
+    // Everyone holds 7s. Each interjection consumes a card, so the chain is
+    // bounded by the total number of 7s in play and MUST terminate.
+    let s = table(players, {
+      0: [{ rank: 7, suit: 'h' }, { rank: 7, suit: 's' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 7, suit: 'c' }, { rank: 7, suit: 'd' }, { rank: 9, suit: 's' }],
+      2: [{ rank: 7, suit: 'h' }, { rank: 9, suit: 'd' }, { rank: 9, suit: 'h' }],
+    })
+    s = step(s, { type: 'play', seat: 0, card: { rank: 7, suit: 'h' } })
+
+    // Always interject when possible — the most aggressive strategy available.
+    for (let i = 0; i < 100 && s.pendingAction; i++) {
+      const active = s.activeSeat!
+      const moves = lastCardGame.getLegalMoves(s, active)
+      const interject = moves.find((m) => m.type === 'interject')
+      const pass = moves.find((m) => m.type === 'pass-interjection')
+      const move = interject ?? pass
+      expect(move).toBeDefined() // the polled seat ALWAYS has a chain move
+      s = step(s, move!)
+    }
+    expect(s.pendingAction).toBeNull() // terminated
+    expect(s.activeSeat).not.toBeNull()
+  })
+
+  it('the seat being polled always has a legal chain move (never a dead end)', () => {
+    let s = table(players, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 8, suit: 'c' }, { rank: 9, suit: 's' }],
+      2: [{ rank: 8, suit: 'd' }, { rank: 9, suit: 'd' }],
+    })
+    s = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    while (s.pendingAction) {
+      const active = s.activeSeat!
+      const moves = lastCardGame.getLegalMoves(s, active)
+      // Whoever is polled can always act — otherwise the game would deadlock.
+      expect(moves.length).toBeGreaterThan(0)
+      s = step(s, moves.find((m) => m.type === 'pass-interjection')!)
+    }
+    expect(s.activeSeat).not.toBeNull()
+  })
+
+  it('a seat whose ONLY card is a chain card is not polled (deadlock regression)', () => {
+    // Regression: eligibility checked "holds a matching card" but getLegalMoves
+    // also forbids going out on an action card. A seat holding exactly one 8 was
+    // therefore polled with ZERO legal moves — activeSeat parked on someone who
+    // could not act, and the game hung forever (surfaced by 6p offline runs).
+    let s = table(players, {
+      0: [{ rank: 8, suit: 'h' }, { rank: 9, suit: 'c' }],
+      1: [{ rank: 9, suit: 's' }, { rank: 9, suit: 'd' }],
+      2: [{ rank: 8, suit: 'd' }], // ONLY an 8 — cannot legally play it
+    })
+    s = step(s, { type: 'play', seat: 0, card: { rank: 8, suit: 'h' } })
+    // Seat 2 must never be polled: the chain resolves instead of hanging.
+    expect(s.pendingAction).toBeNull()
+    expect(s.activeSeat).not.toBeNull()
+    expect(lastCardGame.getLegalMoves(s, s.activeSeat!).length).toBeGreaterThan(0)
+  })
+
+  it('whoever is polled ALWAYS has a legal move, across many random deals', () => {
+    // Property check: drive full games and assert the invariant that broke above
+    // — activeSeat is never parked on a seat with no legal moves.
+    for (const seed of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']) {
+      for (const n of [2, 3, 4, 6]) {
+        const ps = Array.from({ length: n }, (_, i) => ({ id: `p${i}`, name: `P${i}`, seat: i }))
+        let st = lastCardGame.createInitialState(defaultLastCardConfig(), ps, `${seed}-${n}`)
+        for (let i = 0; i < 4000 && !lastCardGame.isTerminal(st); i++) {
+          const active = st.activeSeat!
+          const moves = lastCardGame.getLegalMoves(st, active)
+          expect(moves.length).toBeGreaterThan(0) // the invariant
+          const m =
+            moves.find((x) => x.type === 'declare-last-card') ??
+            moves.find((x) => x.type === 'play') ??
+            moves.find((x) => x.type === 'interject') ??
+            moves[0]!
+          const r = applyMove(lastCardGame, st, m)
+          if (!r.ok) break
+          st = (r as { state: LastCardState }).state
+        }
+      }
+    }
+  }, 30000)
 })

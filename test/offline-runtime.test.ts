@@ -61,6 +61,9 @@ async function playOffline<S extends BaseGameState, M extends BaseMove, C>(
           m.find((x) => x.type === 'declare-last-card') ??
           m.find((x) => x.type === 'play') ??
           m.find((x) => x.type === 'bid') ??
+          // Never leave a skip/reverse interjection window hanging: pass on it
+          // so the chain resolves and play continues.
+          m.find((x) => x.type === 'pass-interjection') ??
           m[0]!
         const r = await t.submitMove(move)
         if (!r.ok) return { done: false, moves, error: r.error }

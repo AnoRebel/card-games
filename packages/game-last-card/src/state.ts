@@ -5,6 +5,38 @@
 import type { BaseGameState, BaseMove, Card, Seat, Suit } from '@card-games/engine-core'
 import type { LastCardConfig } from './config'
 
+/**
+ * A pending skip/reverse chain awaiting interjections.
+ *
+ * `kind` is fixed at open time — a skip chain only accepts skip cards and a
+ * reverse chain only reverse cards, so the two never mix. `origin` is the seat
+ * that opened it (the turn advances from there once resolved).
+ */
+export interface PendingActionChain {
+  kind: 'skip' | 'reverse'
+  /** Seat that played the card which opened this chain. */
+  origin: Seat
+  /**
+   * Number of cards in the chain so far. For a skip, this is how many seats the
+   * stop travels (and how many players it stops). For a reverse, an odd count
+   * leaves the direction flipped and an even count restores it.
+   */
+  count: number
+  /**
+   * Direction in force when the chain opened. Reverse chains re-derive the final
+   * direction from this plus `count`, so interjections stay order-independent.
+   */
+  baseDirection: 1 | -1
+  /** Seats that have declined to interject; they are not asked again. */
+  passed: Seat[]
+  /**
+   * Wall-clock ms deadline for the window, or null when untimed. Set by the
+   * transport layer from `config.interjectionWindowMs` — the reducer itself
+   * stays pure and never reads the clock.
+   */
+  deadline: number | null
+}
+
 export interface LastCardState extends BaseGameState {
   gameId: 'last-card'
   config: LastCardConfig
@@ -27,6 +59,16 @@ export interface LastCardState extends BaseGameState {
    * may stack on a pending 2, but a 2 (+2) may NOT stack on a pending Joker.
    */
   pendingPickupUnit: number
+  /**
+   * An open skip/reverse interjection window, or null when no chain is pending.
+   *
+   * While open, the turn does NOT advance: any player holding a matching card
+   * may interject (pushing the stop / flipping direction again), and eligible
+   * players may pass. The chain resolves — applying its accumulated effect and
+   * handing the turn on — once every eligible seat has passed or the host's
+   * timer expires.
+   */
+  pendingAction: PendingActionChain | null
   /** Seat that has validly declared "Last Card" (cleared when they play out). */
   declaredLastCard: Seat | null
   /**
@@ -60,6 +102,20 @@ export type LastCardMove =
   | { type: 'draw'; seat: Seat }
   | { type: 'declare-last-card'; seat: Seat }
   | { type: 'pass'; seat: Seat }
+  /**
+   * Add a matching skip/reverse card to an open chain, out of turn. Legal for
+   * ANY seat holding a card of the chain's rank family — including the seat the
+   * stop currently rests on, who thereby forfeits their turn to push it onward.
+   */
+  | {
+      type: 'interject'
+      seat: Seat
+      card: Card
+      /** Declare "Last Card" if this interjection empties down to a last group. */
+      declareLastCard?: boolean
+    }
+  /** Decline to interject; the chain resolves once all eligible seats pass. */
+  | { type: 'pass-interjection'; seat: Seat }
 
 // Ensure the move union is assignable to BaseMove.
 type _AssertMove = LastCardMove extends BaseMove ? true : never
