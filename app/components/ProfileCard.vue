@@ -6,7 +6,7 @@
  */
 import { getGame } from '@card-games/engine-core'
 
-const { $t } = useI18n()
+const { $ts } = useI18n()
 const { id, name, avatar, avatarOverride, avatarChoices } = usePlayerIdentity()
 const { stats } = usePlayerStats(id)
 
@@ -23,7 +23,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
           type="button"
           class="text-3xl leading-none rounded-full size-12 grid place-items-center transition hover:scale-105"
           :style="{ background: 'var(--cg-surface)', border: '1px solid var(--cg-border)' }"
-          :aria-label="$t('profile.changeAvatar')"
+          :aria-label="$ts('profile.changeAvatar')"
         >
           {{ avatar }}
         </button>
@@ -42,32 +42,32 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
           </div>
         </template>
       </UPopover>
-      <UInput v-model="name" size="sm" class="flex-1" :placeholder="$t('common.yourName')" />
+      <UInput v-model="name" size="sm" class="flex-1" :placeholder="$ts('common.yourName')" />
     </div>
 
     <!-- Stats -->
     <div v-if="stats.played" class="grid grid-cols-4 gap-2 text-center">
       <div class="rounded-lg p-2" :style="{ background: 'var(--cg-surface)' }">
         <p class="text-lg font-bold font-display tabular-nums">{{ stats.played }}</p>
-        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('profile.played') }}</p>
+        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('profile.played') }}</p>
       </div>
       <div class="rounded-lg p-2" :style="{ background: 'var(--cg-surface)' }">
         <p class="text-lg font-bold font-display tabular-nums">{{ stats.wins }}</p>
-        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('profile.wins') }}</p>
+        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('profile.wins') }}</p>
       </div>
       <div class="rounded-lg p-2" :style="{ background: 'var(--cg-surface)' }">
         <p class="text-lg font-bold font-display tabular-nums">{{ pct(stats.winRate) }}</p>
-        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('profile.winRate') }}</p>
+        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('profile.winRate') }}</p>
       </div>
       <div class="rounded-lg p-2" :style="{ background: 'var(--cg-surface)' }">
         <p class="text-lg font-bold font-display tabular-nums">
           {{ stats.currentStreak }}<span v-if="stats.currentStreak" class="text-sm">🔥</span>
         </p>
-        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('profile.streak') }}</p>
+        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('profile.streak') }}</p>
       </div>
     </div>
     <p v-else class="text-sm text-center" :style="{ color: 'var(--cg-text-muted)' }">
-      {{ $t('profile.noGames') }}
+      {{ $ts('profile.noGames') }}
     </p>
 
     <!-- Per-game breakdown -->
@@ -79,7 +79,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
       >
         <span class="font-medium">{{ gameName(g.gameId) }}</span>
         <span :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('profile.recordLine', { wins: g.wins, played: g.played }) }}
+          {{ $ts('profile.recordLine', { wins: g.wins, played: g.played }) }}
         </span>
       </div>
     </div>

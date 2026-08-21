@@ -10,7 +10,7 @@ const { rules } = useGameContent(props.gameId)
 </script>
 
 <template>
-  <USlideover v-model:open="open" :title="$t('common.howToPlay')" side="right">
+  <USlideover v-model:open="open" :title="$ts('common.howToPlay')" side="right">
     <template #body>
       <div class="space-y-5">
         <section v-for="section in rules" :key="section.heading" class="space-y-1">
@@ -20,7 +20,7 @@ const { rules } = useGameContent(props.gameId)
           </ul>
         </section>
         <p v-if="!rules.length" class="text-sm text-muted">
-          {{ $t('common.noRules') }}
+          {{ $ts('common.noRules') }}
         </p>
       </div>
     </template>

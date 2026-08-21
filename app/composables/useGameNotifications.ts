@@ -26,7 +26,7 @@ export function useGameNotifications(
   // Resolve composables in setup context (they use inject()).
   const { notifications } = usePreferences()
   const toast = useToast()
-  const { $t } = useI18n()
+  const { $ts } = useI18n()
 
   let prevSuit: string | undefined
   let prevActiveSeat: Seat | null | undefined
@@ -101,7 +101,7 @@ export function useGameNotifications(
         const endedBy = withPresence.getRoomInfo?.()?.endedBy ?? null
         if (endedBy && endedBy !== prevEndedBy) {
           notifyTop(
-            $t('game.endedByHost', { name: endedBy }),
+            $ts('game.endedByHost', { name: endedBy }),
             'i-lucide-octagon-x',
           )
         }
@@ -117,7 +117,7 @@ export function useGameNotifications(
 
     // Your turn (rising edge).
     if (view.isMyTurn && !wasMyTurn) {
-      notify($t('game.yourTurn'), 'i-lucide-hand', { accent: true, duration: 3000 })
+      notify($ts('game.yourTurn'), 'i-lucide-hand', { accent: true, duration: 3000 })
     }
     wasMyTurn = view.isMyTurn
 
@@ -128,7 +128,7 @@ export function useGameNotifications(
       if (prevSuit !== undefined && s.activeSuit && s.activeSuit !== prevSuit) {
         const sym = { c: '♣', s: '♠', h: '♥', d: '♦' }[s.activeSuit] ?? s.activeSuit
         notify(
-          $t('game.requestedSuit', { name: nameOf(prevActiveSeat), suit: sym }),
+          $ts('game.requestedSuit', { name: nameOf(prevActiveSeat), suit: sym }),
           'i-lucide-megaphone',
           { accent: true, duration: 5000 },
         )
@@ -138,14 +138,14 @@ export function useGameNotifications(
 
       // Pickup pending grew.
       if ((s.pendingPickup ?? 0) > prevPickup && (s.pendingPickup ?? 0) > 0) {
-        notify($t('game.pickup', { n: s.pendingPickup }), 'i-lucide-plus', { accent: true })
+        notify($ts('game.pickup', { n: s.pendingPickup }), 'i-lucide-plus', { accent: true })
       }
       prevPickup = s.pendingPickup ?? 0
 
       // Last Card declared (called correctly).
       if (s.declaredLastCard != null && s.declaredLastCard !== prevDeclared) {
         notify(
-          $t('game.lastCardCalled', { name: nameOf(s.declaredLastCard) }),
+          $ts('game.lastCardCalled', { name: nameOf(s.declaredLastCard) }),
           'i-lucide-alert-triangle',
           { accent: true, duration: 4500 },
         )
@@ -155,7 +155,7 @@ export function useGameNotifications(
       // Someone reduced to their last card but hasn't declared yet (at risk).
       if (s.awaitingCall != null && s.awaitingCall !== prevAwaiting) {
         notify(
-          $t('game.lastCardHolding', { name: nameOf(s.awaitingCall) }),
+          $ts('game.lastCardHolding', { name: nameOf(s.awaitingCall) }),
           'i-lucide-flame',
           { accent: true, duration: 4500 },
         )
@@ -172,7 +172,7 @@ export function useGameNotifications(
       const onLast =
         myHand.length >= 1 && myHand.every((c) => c.rank === myHand[0]!.rank)
       if (onLast && !prevOnLast) {
-        notify($t('game.youOnLastCard'), 'i-lucide-flame', { accent: true, duration: 5000 })
+        notify($ts('game.youOnLastCard'), 'i-lucide-flame', { accent: true, duration: 5000 })
       }
       prevOnLast = onLast
     }
@@ -181,7 +181,7 @@ export function useGameNotifications(
     if (view.scores && !notifiedTerminal) {
       notifiedTerminal = true
       const winner = players.find((p) => view.scores!.winners.includes(p.seat))
-      notify($t('game.wins', { name: winner?.name ?? '—' }), 'i-lucide-trophy', {
+      notify($ts('game.wins', { name: winner?.name ?? '—' }), 'i-lucide-trophy', {
         accent: true,
         duration: 6000,
       })

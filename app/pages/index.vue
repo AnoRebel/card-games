@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { standardDeck, getGame } from '@card-games/engine-core'
 
-const { $t, $localePath } = useI18n()
-useHead({ title: () => $t('app.title') })
+const { $ts, $localePath } = useI18n()
+useHead({ title: () => $ts('app.title') })
 
 // Daily challenge — a fixed seed of the day + local streak.
 const { today: daily } = useDailyChallenge()
@@ -12,7 +12,7 @@ const games = computed(() => [
   {
     id: 'last-card',
     name: 'Last Card',
-    tagline: $t('home.taglineLastCard'),
+    tagline: $ts('home.taglineLastCard'),
     players: '2–6',
     to: '/play/last-card',
     font: 'font-last-card',
@@ -26,7 +26,7 @@ const games = computed(() => [
   {
     id: 'albastini',
     name: 'Albastini',
-    tagline: $t('home.taglineAlbastini'),
+    tagline: $ts('home.taglineAlbastini'),
     players: '2·3·4·6',
     to: '/play/albastini',
     font: 'font-albastini italic',
@@ -56,15 +56,15 @@ void standardDeck
         class="text-xs font-semibold uppercase tracking-[0.2em] mb-2"
         :style="{ color: 'var(--cg-accent)' }"
       >
-        {{ $t('home.badge') }}
+        {{ $ts('home.badge') }}
       </p>
       <h1
         class="font-display text-4xl sm:text-6xl font-extrabold tracking-tight leading-[0.95]"
       >
-        {{ $t('app.tagline') }}
+        {{ $ts('app.tagline') }}
       </h1>
       <p class="mt-3 max-w-xl text-sm sm:text-base" :style="{ color: 'var(--cg-text-muted)' }">
-        {{ $t('app.subtitle') }}
+        {{ $ts('app.subtitle') }}
       </p>
     </section>
 
@@ -77,16 +77,16 @@ void standardDeck
       <span class="text-3xl">📅</span>
       <div class="min-w-0 flex-1">
         <p class="font-display font-bold flex items-center gap-2">
-          {{ $t('daily.title') }}
-          <UBadge v-if="daily.playedToday" color="success" variant="subtle" size="sm">{{ $t('daily.doneToday') }}</UBadge>
+          {{ $ts('daily.title') }}
+          <UBadge v-if="daily.playedToday" color="success" variant="subtle" size="sm">{{ $ts('daily.doneToday') }}</UBadge>
         </p>
         <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('daily.subtitle', { game: dailyGameName }) }}
+          {{ $ts('daily.subtitle', { game: dailyGameName }) }}
         </p>
       </div>
       <div v-if="daily.streak > 0" class="text-right shrink-0">
         <p class="font-display font-bold text-lg leading-none">{{ daily.streak }}🔥</p>
-        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('daily.streak') }}</p>
+        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('daily.streak') }}</p>
       </div>
     </NuxtLink>
 
@@ -126,7 +126,7 @@ void standardDeck
             {{ game.tagline }}
           </p>
           <div class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold cg-accent-text">
-            {{ $t('common.play') }}
+            {{ $ts('common.play') }}
             <UIcon name="i-lucide-arrow-right" class="transition-transform group-hover:translate-x-1" />
           </div>
         </div>
@@ -135,7 +135,7 @@ void standardDeck
 
     <section data-reveal class="flex justify-center pb-4">
       <UButton :to="$localePath('/rooms')" variant="soft" color="neutral" size="lg" icon="i-lucide-radio">
-        {{ $t('lobby.browseRooms') }}
+        {{ $ts('lobby.browseRooms') }}
       </UButton>
     </section>
   </div>

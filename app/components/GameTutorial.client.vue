@@ -82,17 +82,17 @@ defineExpose({
       :allow-skip="true"
     />
 
-    <UModal v-model:open="showOffer" :title="$t('tutorial.offerTitle')">
+    <UModal v-model:open="showOffer" :title="$ts('tutorial.offerTitle')">
       <template #body>
-        <p class="text-sm text-muted">{{ $t('tutorial.offerBody') }}</p>
+        <p class="text-sm text-muted">{{ $ts('tutorial.offerBody') }}</p>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end">
           <UButton variant="ghost" color="neutral" @click="dismiss">
-            {{ $t('tutorial.noThanks') }}
+            {{ $ts('tutorial.noThanks') }}
           </UButton>
           <UButton color="primary" icon="i-lucide-graduation-cap" @click="start">
-            {{ $t('tutorial.startTour') }}
+            {{ $ts('tutorial.startTour') }}
           </UButton>
         </div>
       </template>

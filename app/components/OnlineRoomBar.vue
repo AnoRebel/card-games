@@ -17,7 +17,7 @@ const props = defineProps<{
 const session = useGameSession(props.transport)
 const { copy } = useClipboard()
 const { track } = useAnalytics()
-const { $t } = useI18n()
+const { $ts } = useI18n()
 const copiedKey = ref<string | null>(null)
 
 function copyAs(key: string, value: string) {
@@ -46,9 +46,9 @@ const canStart = computed(
 // is that it's already running — not a shortage of players, which is what the
 // bare "need players" fallback used to (misleadingly) claim.
 const startTitle = computed(() => {
-  if (canStart.value) return $t('room.startGame')
-  if (phase.value !== 'lobby') return $t('room.alreadyStarted')
-  return $t('room.needPlayers', { min: minPlayers.value })
+  if (canStart.value) return $ts('room.startGame')
+  if (phase.value !== 'lobby') return $ts('room.alreadyStarted')
+  return $ts('room.needPlayers', { min: minPlayers.value })
 })
 
 // Reconnect countdown: when a seated player drops mid-game the server sets a
@@ -85,8 +85,8 @@ onBeforeUnmount(() => offConn?.())
       color="warning"
       variant="subtle"
       icon="i-lucide-wifi-off"
-      :title="$t('room.reconnecting')"
-      :description="$t('room.reconnectingBody')"
+      :title="$ts('room.reconnecting')"
+      :description="$ts('room.reconnectingBody')"
     />
 
     <!-- Reconnect countdown (a seated player dropped mid-game) -->
@@ -95,19 +95,19 @@ onBeforeUnmount(() => offConn?.())
       color="warning"
       variant="subtle"
       icon="i-lucide-user-x"
-      :title="$t('game.playerLeftTitle')"
-      :description="$t('game.playerLeftCountdown', { count: graceSeconds })"
+      :title="$ts('game.playerLeftTitle')"
+      :description="$ts('game.playerLeftCountdown', { count: graceSeconds })"
     />
 
     <div class="cg-surface rounded-xl p-2.5 flex flex-wrap items-center gap-2">
     <UBadge color="info" variant="subtle" icon="i-lucide-users">
-      {{ $t('game.seated', { count: seated }) }} ·
-      {{ $t('game.here', { count: here }) }}
+      {{ $ts('game.seated', { count: seated }) }} ·
+      {{ $ts('game.here', { count: here }) }}
     </UBadge>
 
     <!-- Spectator indicator (read-only) -->
     <UBadge v-if="amSpectator" color="neutral" variant="subtle" icon="i-lucide-eye">
-      {{ $t('common.spectating') }}
+      {{ $ts('common.spectating') }}
     </UBadge>
 
     <UBadge
@@ -115,19 +115,19 @@ onBeforeUnmount(() => offConn?.())
       variant="subtle"
       :icon="isLocked ? 'i-lucide-lock' : 'i-lucide-globe'"
     >
-      {{ isLocked ? $t('common.private') : $t('common.public') }}
+      {{ isLocked ? $ts('common.private') : $ts('common.public') }}
     </UBadge>
 
     <!-- Click/focus (default) mode so the help is reachable by keyboard and
          touch, not hover-only. -->
     <UPopover>
-      <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-info" :aria-label="$t('room.aboutLinks')" />
+      <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-info" :aria-label="$ts('room.aboutLinks')" />
       <template #content>
         <div class="p-3 text-xs max-w-64 space-y-1.5" :style="{ color: 'var(--cg-text-muted)' }">
-          <p><strong class="text-default">{{ $t('room.playerLink') }}</strong> — {{ $t('room.playerLinkExplain') }}</p>
-          <p><strong class="text-default">{{ $t('room.spectatorLink') }}</strong> — {{ $t('room.spectatorLinkExplain') }}</p>
-          <p v-if="isLocked">{{ $t('room.privateExplain') }}</p>
-          <p v-else>{{ $t('room.publicExplain') }}</p>
+          <p><strong class="text-default">{{ $ts('room.playerLink') }}</strong> — {{ $ts('room.playerLinkExplain') }}</p>
+          <p><strong class="text-default">{{ $ts('room.spectatorLink') }}</strong> — {{ $ts('room.spectatorLinkExplain') }}</p>
+          <p v-if="isLocked">{{ $ts('room.privateExplain') }}</p>
+          <p v-else>{{ $ts('room.publicExplain') }}</p>
         </div>
       </template>
     </UPopover>
@@ -136,17 +136,17 @@ onBeforeUnmount(() => offConn?.())
          carries both the player and spectator links (QR + copy + native share);
          the passcode stays a separate chip since it's not a link. -->
     <template v-if="!amSpectator">
-      <RoomShare :share-url="shareUrl" :spectator-url="spectatorUrl || undefined" :title="$t('app.title')" />
+      <RoomShare :share-url="shareUrl" :spectator-url="spectatorUrl || undefined" :title="$ts('app.title')" />
       <UButton
         v-if="passcode"
         size="xs"
         variant="soft"
         color="warning"
         icon="i-lucide-key-round"
-        :title="$t('room.copyPasscode')"
+        :title="$ts('room.copyPasscode')"
         @click="copyAs('code', passcode)"
       >
-        {{ copiedKey === 'code' ? $t('game.copied') : passcode }}
+        {{ copiedKey === 'code' ? $ts('game.copied') : passcode }}
       </UButton>
     </template>
 
@@ -162,7 +162,7 @@ onBeforeUnmount(() => offConn?.())
         :title="startTitle"
         @click="transport.startGame()"
       >
-        {{ $t('common.start') }}
+        {{ $ts('common.start') }}
       </UButton>
       <UButton
         v-if="phase === 'in-progress'"
@@ -170,14 +170,14 @@ onBeforeUnmount(() => offConn?.())
         color="error"
         variant="soft"
         icon="i-lucide-square"
-        :title="$t('room.endGame')"
+        :title="$ts('room.endGame')"
         @click="transport.endGame()"
       >
-        {{ $t('common.end') }}
+        {{ $ts('common.end') }}
       </UButton>
     </template>
     <UBadge v-else color="neutral" variant="subtle">
-      {{ phase === 'lobby' ? $t('room.waitingForHost') : $t(`lobby.phase${phase === 'in-progress' ? 'InProgress' : 'Finished'}`) }}
+      {{ phase === 'lobby' ? $ts('room.waitingForHost') : $ts(`lobby.phase${phase === 'in-progress' ? 'InProgress' : 'Finished'}`) }}
     </UBadge>
     </div>
   </div>

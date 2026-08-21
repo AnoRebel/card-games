@@ -4,7 +4,7 @@
  * Replaces the standalone /settings page. Tighter, grouped, mobile-friendly.
  */
 const { open } = useSettingsPanel()
-const { $t, $switchLocale, $getLocales, $getLocale } = useI18n()
+const { $ts, $switchLocale, $getLocales, $getLocale } = useI18n()
 const { isDark, toggle } = useThemeMode()
 const { theme, motion, themes } = useAppTheme()
 const { notifications, sound } = usePreferences()
@@ -12,13 +12,13 @@ const modalUi = useThemedModalUi()
 </script>
 
 <template>
-  <USlideover v-model:open="open" :title="$t('common.settings')" side="right" :ui="modalUi">
+  <USlideover v-model:open="open" :title="$ts('common.settings')" side="right" :ui="modalUi">
     <template #body>
       <div class="space-y-5">
         <!-- Profile: avatar, name, and your local stats -->
         <section class="space-y-1.5">
           <label class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $t('profile.title') }}
+            {{ $ts('profile.title') }}
           </label>
           <ProfileCard />
         </section>
@@ -26,7 +26,7 @@ const modalUi = useThemedModalUi()
         <!-- Visual theme -->
         <section class="space-y-2">
           <span class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $t('common.appearance') }}
+            {{ $ts('common.appearance') }}
           </span>
           <div class="grid grid-cols-3 gap-2">
             <button
@@ -45,7 +45,7 @@ const modalUi = useThemedModalUi()
             </button>
           </div>
           <div class="flex items-center justify-between pt-1">
-            <span class="text-sm">{{ isDark ? $t('theme.darkMode') : $t('theme.lightMode') }}</span>
+            <span class="text-sm">{{ isDark ? $ts('theme.darkMode') : $ts('theme.lightMode') }}</span>
             <USwitch :model-value="isDark" @update:model-value="() => toggle()" />
           </div>
         </section>
@@ -84,7 +84,7 @@ const modalUi = useThemedModalUi()
         <!-- Language -->
         <section class="space-y-2">
           <span class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $t('common.language') }}
+            {{ $ts('common.language') }}
           </span>
           <UFieldGroup class="w-full">
             <UButton

@@ -118,14 +118,14 @@ function time(iso: string) {
         >
           <span class="flex items-center gap-1.5">
             <UIcon name="i-lucide-grip-horizontal" :style="{ color: 'var(--cg-text-muted)' }" />
-            {{ $t('chat.title') }}
+            {{ $ts('chat.title') }}
           </span>
           <UButton
             size="xs"
             variant="ghost"
             color="neutral"
             icon="i-lucide-minus"
-            :title="$t('chat.minimize')"
+            :title="$ts('chat.minimize')"
             @click="open = false"
           />
         </div>
@@ -142,7 +142,7 @@ function time(iso: string) {
               size="xs"
               color="primary"
               icon="i-lucide-phone"
-              :label="$t('voice.join')"
+              :label="$ts('voice.join')"
               @click="voice.join()"
             />
             <template v-else>
@@ -151,16 +151,16 @@ function time(iso: string) {
                 color="error"
                 variant="soft"
                 icon="i-lucide-phone-off"
-                :label="$t('voice.leave')"
+                :label="$ts('voice.leave')"
                 @click="voice.leave()"
               />
-              <UTooltip :text="voice.muted.value ? $t('voice.unmute') : $t('voice.mute')">
+              <UTooltip :text="voice.muted.value ? $ts('voice.unmute') : $ts('voice.mute')">
                 <UButton
                   size="xs"
                   variant="ghost"
                   color="neutral"
                   :icon="voice.muted.value ? 'i-lucide-mic-off' : 'i-lucide-mic'"
-                  :aria-label="voice.muted.value ? $t('voice.unmute') : $t('voice.mute')"
+                  :aria-label="voice.muted.value ? $ts('voice.unmute') : $ts('voice.mute')"
                   @click="voice.toggleMute()"
                 />
               </UTooltip>
@@ -169,20 +169,20 @@ function time(iso: string) {
                 class="text-xs"
                 :style="{ color: 'var(--cg-text-muted)' }"
               >
-                {{ $t('voice.connecting') }}
+                {{ $ts('voice.connecting') }}
               </span>
               <span
                 v-else
                 class="text-xs ml-auto"
                 :style="{ color: 'var(--cg-text-muted)' }"
               >
-                {{ $t('voice.inVoice', { count: voice.peers.value.length + 1 }) }}
+                {{ $ts('voice.inVoice', { count: voice.peers.value.length + 1 }) }}
               </span>
             </template>
           </div>
 
           <p v-if="voice.error.value" class="text-xs text-red-500">
-            {{ voice.error.value === 'micDenied' ? $t('voice.micDenied') : $t('voice.unsupported') }}
+            {{ voice.error.value === 'micDenied' ? $ts('voice.micDenied') : $ts('voice.unsupported') }}
           </p>
 
           <ul v-if="voice.inVoice.value && voice.peers.value.length" class="space-y-1">
@@ -198,7 +198,7 @@ function time(iso: string) {
                   background: p.speaking ? 'var(--cg-accent)' : 'var(--cg-text-muted)',
                   opacity: p.speaking ? 1 : 0.4,
                 }"
-                :title="p.speaking ? $t('voice.speaking') : ''"
+                :title="p.speaking ? $ts('voice.speaking') : ''"
               />
               <UIcon name="i-lucide-volume-2" class="shrink-0" :style="{ color: 'var(--cg-text-muted)' }" />
               <span class="truncate">{{ p.name }}</span>
@@ -208,7 +208,7 @@ function time(iso: string) {
 
         <div ref="listRef" class="flex-1 overflow-y-auto p-3 space-y-1.5 text-sm" data-tour="chat">
           <p v-if="!session.chat.value.length" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ $t('chat.empty') }}
+            {{ $ts('chat.empty') }}
           </p>
           <div v-for="m in session.chat.value" :key="m.id" class="flex gap-2">
             <span class="text-xs shrink-0 tabular-nums" :style="{ color: 'var(--cg-text-muted)' }">
@@ -223,8 +223,8 @@ function time(iso: string) {
           :style="{ borderColor: 'var(--cg-border)' }"
           @submit.prevent="send"
         >
-          <UInput v-model="draft" :placeholder="$t('chat.placeholder')" size="sm" class="flex-1" :maxlength="500" />
-          <UButton type="submit" size="sm" icon="i-lucide-send" :disabled="!draft.trim()" :title="$t('chat.send')" />
+          <UInput v-model="draft" :placeholder="$ts('chat.placeholder')" size="sm" class="flex-1" :maxlength="500" />
+          <UButton type="submit" size="sm" icon="i-lucide-send" :disabled="!draft.trim()" :title="$ts('chat.send')" />
         </form>
 
         <!-- visible resize affordance (the panel itself is CSS-resizable) -->
@@ -249,7 +249,7 @@ function time(iso: string) {
         right: 'max(1rem, env(safe-area-inset-right))',
         bottom: 'max(1rem, env(safe-area-inset-bottom))',
       }"
-      :title="$t('chat.title')"
+      :title="$ts('chat.title')"
       @click="open = true"
     >
       <UIcon name="i-lucide-message-circle" class="text-xl" />

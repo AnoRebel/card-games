@@ -270,7 +270,7 @@ async function passBid() {
   <div v-if="!hasState" class="cg-surface rounded-2xl p-10 text-center space-y-2">
     <UIcon name="i-lucide-loader-circle" class="animate-spin text-2xl" />
     <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-      {{ $t('game.waitingToStart') }}
+      {{ $ts('game.waitingToStart') }}
     </p>
   </div>
 
@@ -282,8 +282,8 @@ async function passBid() {
         :key="opp.seat"
         :ref="(n) => setOppEl(opp.seat, n as Element | null)"
         type="button"
-        :title="`${opp.name} — ${$t('game.cardsEaten', { count: eaten(opp.seat).length })}`"
-        :aria-label="`${opp.name}: ${$t('game.cardsInHand', { count: handSize(opp.seat) })}, ${$t('game.cardsEaten', { count: eaten(opp.seat).length })}${ab.activeSeat === opp.seat ? ` — ${$t('game.yourTurn')}` : ''}`"
+        :title="`${opp.name} — ${$ts('game.cardsEaten', { count: eaten(opp.seat).length })}`"
+        :aria-label="`${opp.name}: ${$ts('game.cardsInHand', { count: handSize(opp.seat) })}, ${$ts('game.cardsEaten', { count: eaten(opp.seat).length })}${ab.activeSeat === opp.seat ? ` — ${$ts('game.yourTurn')}` : ''}`"
         :aria-current="ab.activeSeat === opp.seat ? 'true' : undefined"
         class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition"
         :style="{
@@ -297,10 +297,10 @@ async function passBid() {
         <span class="flex -space-x-3">
           <PlayingCard v-for="n in Math.min(handSize(opp.seat), 4)" :key="n" face-down :width="24" />
         </span>
-        <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="$t('game.cardsInHand', { count: handSize(opp.seat) })">
+        <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="$ts('game.cardsInHand', { count: handSize(opp.seat) })">
           <UIcon name="i-lucide-layers" /> {{ handSize(opp.seat) }}
         </span>
-        <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="$t('game.cardsEaten', { count: eaten(opp.seat).length })">
+        <span class="inline-flex items-center gap-0.5" :style="{ color: 'var(--cg-text-muted)' }" :title="$ts('game.cardsEaten', { count: eaten(opp.seat).length })">
           <UIcon name="i-lucide-utensils" /> {{ eaten(opp.seat).length }}
         </span>
       </button>
@@ -310,7 +310,7 @@ async function passBid() {
     <div ref="tableRef" class="relative rounded-2xl p-6 sm:p-10 cg-felt flex flex-col items-center gap-5 overflow-hidden min-h-[340px]">
       <div class="flex items-center justify-center gap-6 flex-wrap">
         <div ref="trumpRef" class="flex items-center gap-2 text-white/90" data-tour="trump">
-          <span class="text-xs font-semibold uppercase tracking-wide">{{ $t('game.trump') }}</span>
+          <span class="text-xs font-semibold uppercase tracking-wide">{{ $ts('game.trump') }}</span>
           <span class="text-3xl font-bold">{{ trumpSym }}</span>
           <PlayingCard v-if="ab.trumpCard" :card="ab.trumpCard" :width="60" />
         </div>
@@ -318,7 +318,7 @@ async function passBid() {
         <div ref="stockRef" class="flex flex-col items-center gap-1" data-tour="stock">
           <CardPile :face-down="true" :count="stockCount" :width="48" />
           <span class="text-[11px] font-medium text-white/80 inline-flex items-center gap-1">
-            <UIcon name="i-lucide-layers" /> {{ $t('game.deckCount', { count: stockCount }) }}
+            <UIcon name="i-lucide-layers" /> {{ $ts('game.deckCount', { count: stockCount }) }}
           </span>
         </div>
       </div>
@@ -335,7 +335,7 @@ async function passBid() {
           <span class="text-[11px] text-white/80">{{ players.find((p) => p.seat === tp.seat)?.name }}</span>
         </div>
         <p v-if="!ab.currentTrick.length" class="text-white/60 text-sm self-center">
-          {{ $t('game.noCardsYet') }}
+          {{ $ts('game.noCardsYet') }}
         </p>
       </div>
     </div>
@@ -349,8 +349,8 @@ async function passBid() {
           ? { background: 'var(--cg-accent)', color: 'var(--cg-accent-contrast)' }
           : { color: 'var(--cg-text-muted)' }"
       >
-        <template v-if="ab.phase === 'bidding'">{{ $t('game.bidding') }}</template>
-        {{ isMyTurn ? $t('game.yourTurn') : $t('game.waitingFor', { name: activeName }) }}
+        <template v-if="ab.phase === 'bidding'">{{ $ts('game.bidding') }}</template>
+        {{ isMyTurn ? $ts('game.yourTurn') : $ts('game.waitingFor', { name: activeName }) }}
       </span>
       <UButton
         v-if="ab.phase === 'bidding' && isMyTurn"
@@ -358,14 +358,14 @@ async function passBid() {
         variant="outline"
         @click="passBid"
       >
-        {{ $t('game.passBid') }}
+        {{ $ts('game.passBid') }}
       </UButton>
     </div>
 
     <!-- Your hand, with a live card count -->
     <div class="flex items-center justify-center gap-1.5 text-xs font-medium" :style="{ color: 'var(--cg-text-muted)' }">
       <UIcon name="i-lucide-layers" />
-      {{ $t('game.cardsInHand', { count: myHand.length }) }}
+      {{ $ts('game.cardsInHand', { count: myHand.length }) }}
     </div>
     <GestureHand
       ref="handRef"
@@ -386,7 +386,7 @@ async function passBid() {
       @click="showEaten = viewerSeat"
     >
       <span class="flex items-center gap-1.5">
-        <UIcon name="i-lucide-utensils" /> {{ $t('game.yourEatenCards') }}
+        <UIcon name="i-lucide-utensils" /> {{ $ts('game.yourEatenCards') }}
       </span>
       <span class="flex -space-x-4">
         <PlayingCard
@@ -404,12 +404,12 @@ async function passBid() {
     <MoveLogSlideover :entries="log.entries.value" />
 
     <!-- Eaten-cards viewer -->
-    <UModal v-model:open="eatenModalOpen" :title="`${players.find((p) => p.seat === showEaten)?.name ?? ''} — ${$t('game.eatenCards')}`" :ui="modalUi">
+    <UModal v-model:open="eatenModalOpen" :title="`${players.find((p) => p.seat === showEaten)?.name ?? ''} — ${$ts('game.eatenCards')}`" :ui="modalUi">
       <template #body>
         <div v-if="showEaten !== null" class="flex flex-wrap gap-1.5 justify-center">
           <PlayingCard v-for="(c, i) in eaten(showEaten)" :key="i" :card="c" :width="52" />
           <p v-if="!eaten(showEaten).length" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ $t('game.noCardsEaten') }}
+            {{ $ts('game.noCardsEaten') }}
           </p>
         </div>
       </template>

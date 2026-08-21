@@ -6,7 +6,7 @@
  * without devOptions), so everything is guarded.
  */
 const { $pwa } = useNuxtApp()
-const { $t } = useI18n()
+const { $ts } = useI18n()
 const toast = useToast()
 
 // One-time "ready to play offline" confirmation.
@@ -15,7 +15,7 @@ watch(
   (ready) => {
     if (ready) {
       toast.add({
-        title: $t('pwa.offlineReady'),
+        title: $ts('pwa.offlineReady'),
         icon: 'i-lucide-wifi-off',
         duration: 4000,
         ui: {
@@ -39,9 +39,9 @@ watch(
         :style="{ background: 'var(--cg-surface-solid)', border: '1px solid var(--cg-border)' }"
       >
         <UIcon name="i-lucide-sparkles" :style="{ color: 'var(--cg-accent)' }" />
-        <span class="text-sm">{{ $t('pwa.newVersion') }}</span>
+        <span class="text-sm">{{ $ts('pwa.newVersion') }}</span>
         <UButton size="xs" color="primary" @click="$pwa.updateServiceWorker()">
-          {{ $t('pwa.reload') }}
+          {{ $ts('pwa.reload') }}
         </UButton>
         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" @click="$pwa.cancelPrompt()" />
       </div>
@@ -55,9 +55,9 @@ watch(
         :style="{ background: 'var(--cg-surface-solid)', border: '1px solid var(--cg-border)' }"
       >
         <UIcon name="i-lucide-download" :style="{ color: 'var(--cg-accent)' }" />
-        <span class="text-sm">{{ $t('pwa.installPrompt') }}</span>
+        <span class="text-sm">{{ $ts('pwa.installPrompt') }}</span>
         <UButton size="xs" color="primary" @click="$pwa.install()">
-          {{ $t('pwa.install') }}
+          {{ $ts('pwa.install') }}
         </UButton>
         <UButton size="xs" variant="ghost" color="neutral" icon="i-lucide-x" @click="$pwa.cancelInstall()" />
       </div>

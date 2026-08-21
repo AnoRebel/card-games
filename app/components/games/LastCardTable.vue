@@ -467,7 +467,7 @@ async function draw() {
   <div v-if="!hasState" class="cg-surface rounded-2xl p-10 text-center space-y-2">
     <UIcon name="i-lucide-loader-circle" class="animate-spin text-2xl" />
     <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-      {{ $t('game.waitingToStart') }}
+      {{ $ts('game.waitingToStart') }}
     </p>
   </div>
 
@@ -479,7 +479,7 @@ async function draw() {
         :key="opp.seat"
         :ref="(n) => setOppEl(opp.seat, n as Element | null)"
         :title="`${opp.name} — ${handSize(opp.seat)} cards`"
-        :aria-label="`${opp.name}: ${$t('game.cardsInHand', { count: handSize(opp.seat) })}${lc.activeSeat === opp.seat ? ` — ${$t('game.yourTurn')}` : ''}`"
+        :aria-label="`${opp.name}: ${$ts('game.cardsInHand', { count: handSize(opp.seat) })}${lc.activeSeat === opp.seat ? ` — ${$ts('game.yourTurn')}` : ''}`"
         :aria-current="lc.activeSeat === opp.seat ? 'true' : undefined"
         class="flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition"
         :class="lc.activeSeat === opp.seat ? 'cg-glow' : ''"
@@ -508,7 +508,7 @@ async function draw() {
           <CardPile
             :face-down="true"
             :count="lc.drawPile?.length ?? 0"
-            :label="$t('game.draw')"
+            :label="$ts('game.draw')"
             :width="96"
             :selectable="isMyTurn"
             data-tour="draw"
@@ -516,7 +516,7 @@ async function draw() {
           />
         </div>
         <span class="text-[11px] font-medium text-white/80 inline-flex items-center gap-1">
-          <UIcon name="i-lucide-layers" /> {{ $t('game.deckCount', { count: lc.drawPile?.length ?? 0 }) }}
+          <UIcon name="i-lucide-layers" /> {{ $ts('game.deckCount', { count: lc.drawPile?.length ?? 0 }) }}
         </span>
       </div>
       <div ref="discardRef" class="flex flex-col items-center gap-2" data-tour="discard">
@@ -530,7 +530,7 @@ async function draw() {
             : {}"
         >
           <UIcon v-if="suitRequested" name="i-lucide-megaphone" class="size-4" />
-          {{ suitRequested ? $t('game.suitRequested') : $t('game.suit') }}:
+          {{ suitRequested ? $ts('game.suitRequested') : $ts('game.suit') }}:
           <span class="text-2xl leading-none" :class="isRedSuit(lc.activeSuit) && !suitRequested ? 'text-red-400' : ''">
             {{ suitSym(lc.activeSuit) }}
           </span>
@@ -551,7 +551,7 @@ async function draw() {
         @click="callLastCard"
       >
         <UIcon name="i-lucide-megaphone" class="size-5" />
-        {{ $t('game.callLastCard') }}
+        {{ $ts('game.callLastCard') }}
       </button>
     </div>
 
@@ -560,8 +560,8 @@ async function draw() {
     <div v-if="pendingChain && isMyTurn && passInterjection" class="flex flex-col items-center gap-2">
       <span class="text-xs font-semibold" :style="{ color: 'var(--cg-text-muted)' }">
         {{ pendingChain.kind === 'skip'
-          ? $t('game.interjectSkipPrompt', { n: pendingChain.count })
-          : $t('game.interjectReversePrompt', { n: pendingChain.count }) }}
+          ? $ts('game.interjectSkipPrompt', { n: pendingChain.count })
+          : $ts('game.interjectReversePrompt', { n: pendingChain.count }) }}
       </span>
       <button
         type="button"
@@ -570,7 +570,7 @@ async function draw() {
         @click="declineInterjection"
       >
         <UIcon name="i-lucide-skip-forward" />
-        {{ $t('game.interjectPass') }}
+        {{ $ts('game.interjectPass') }}
       </button>
     </div>
 
@@ -583,7 +583,7 @@ async function draw() {
           ? { background: 'var(--cg-accent)', color: 'var(--cg-accent-contrast)' }
           : { color: 'var(--cg-text-muted)' }"
       >
-        {{ isMyTurn ? $t('game.yourTurn') : $t('game.waitingFor', { name: activeName }) }}
+        {{ isMyTurn ? $ts('game.yourTurn') : $ts('game.waitingFor', { name: activeName }) }}
       </span>
     </div>
 
@@ -596,14 +596,14 @@ async function draw() {
         @click="draw"
       >
         <UIcon name="i-lucide-download" />
-        {{ suitRequested ? $t('game.mustPlaySuit', { suit: suitSym(lc.activeSuit) }) : $t('game.noPlayDraw') }}
+        {{ suitRequested ? $ts('game.mustPlaySuit', { suit: suitSym(lc.activeSuit) }) : $ts('game.noPlayDraw') }}
       </button>
     </div>
 
     <!-- Your hand, with a live card count -->
     <div class="flex items-center justify-center gap-1.5 text-xs font-medium" :style="{ color: 'var(--cg-text-muted)' }" data-tour="last-card">
       <UIcon name="i-lucide-layers" />
-      {{ $t('game.cardsInHand', { count: myHand.length }) }}
+      {{ $ts('game.cardsInHand', { count: myHand.length }) }}
     </div>
     <GestureHand
       ref="handRef"
@@ -615,7 +615,7 @@ async function draw() {
     />
 
     <!-- Suit chooser -->
-    <UModal v-model:open="suitModalOpen" :title="$t('game.chooseSuit')" :ui="modalUi">
+    <UModal v-model:open="suitModalOpen" :title="$ts('game.chooseSuit')" :ui="modalUi">
       <template #body>
         <div class="grid grid-cols-2 gap-3">
           <UButton
@@ -636,21 +636,21 @@ async function draw() {
     <!-- Multi same-rank chooser (pair / triplet / …) -->
     <UModal
       v-model:open="multiModalOpen"
-      :title="choosingTop ? $t('game.chooseTopTitle') : $t('game.playMultipleTitle')"
+      :title="choosingTop ? $ts('game.chooseTopTitle') : $ts('game.playMultipleTitle')"
       :ui="modalUi"
     >
       <template #body>
         <!-- Step 1: play one vs all -->
         <div v-if="!choosingTop" class="space-y-3">
           <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ $t('game.playMultipleBody', { count: multiCount }) }}
+            {{ $ts('game.playMultipleBody', { count: multiCount }) }}
           </p>
           <div class="grid grid-cols-2 gap-3">
             <UButton size="lg" variant="outline" color="neutral" class="justify-center" @click="chooseMulti(false)">
-              {{ $t('game.playOne') }}
+              {{ $ts('game.playOne') }}
             </UButton>
             <UButton size="lg" color="primary" class="justify-center" @click="chooseMulti(true)">
-              {{ $t('game.playAll', { count: multiCount }) }}
+              {{ $ts('game.playAll', { count: multiCount }) }}
             </UButton>
           </div>
         </div>
@@ -658,7 +658,7 @@ async function draw() {
         <!-- Step 2: which card stays on top (sets the suit) -->
         <div v-else class="space-y-3">
           <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ $t('game.chooseTopBody') }}
+            {{ $ts('game.chooseTopBody') }}
           </p>
           <div class="flex flex-wrap gap-3 justify-center">
             <button
@@ -667,8 +667,8 @@ async function draw() {
               type="button"
               class="rounded-xl p-1 transition hover:-translate-y-1"
               :style="{ border: '2px solid var(--cg-border)' }"
-              :title="$t('game.topCard', { card: `${topOf(b)?.rank}${suitSymOf(topOf(b)?.suit ?? '')}` })"
-              :aria-label="$t('game.topCard', { card: topOf(b) ? cardName(topOf(b)!) : '' })"
+              :title="$ts('game.topCard', { card: `${topOf(b)?.rank}${suitSymOf(topOf(b)?.suit ?? '')}` })"
+              :aria-label="$ts('game.topCard', { card: topOf(b) ? cardName(topOf(b)!) : '' })"
               @click="chooseTop(b)"
             >
               <PlayingCard v-if="topOf(b)" :card="topOf(b)!" :width="64" />
@@ -680,19 +680,19 @@ async function draw() {
 
     <!-- "Call Last Card?" — shown on your turn when a play leaves you on your
          last card(s). Untimed: the game waits for your choice. -->
-    <UModal v-model:open="callModalOpen" :title="$t('game.callLastCardTitle')" :ui="modalUi">
+    <UModal v-model:open="callModalOpen" :title="$ts('game.callLastCardTitle')" :ui="modalUi">
       <template #body>
         <div class="space-y-3 text-center">
           <p class="text-3xl">🔔</p>
           <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ $t('game.callLastCardBody') }}
+            {{ $ts('game.callLastCardBody') }}
           </p>
           <div class="grid grid-cols-2 gap-3">
             <UButton size="lg" color="primary" icon="i-lucide-megaphone" class="justify-center" @click="answerCall(true)">
-              {{ $t('game.callLastCard') }}
+              {{ $ts('game.callLastCard') }}
             </UButton>
             <UButton size="lg" variant="outline" color="neutral" class="justify-center" @click="answerCall(false)">
-              {{ $t('game.stayQuiet') }}
+              {{ $ts('game.stayQuiet') }}
             </UButton>
           </div>
         </div>

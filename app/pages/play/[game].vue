@@ -9,7 +9,7 @@ import { WsTransport } from '~/transports/WsTransport'
 
 const route = useRoute()
 const router = useRouter()
-const { $t, $localePath } = useI18n()
+const { $ts, $localePath } = useI18n()
 const gameId = computed(() => String(route.params.game))
 
 const meta = computed(() => getGame(gameId.value)?.meta ?? null)
@@ -237,7 +237,7 @@ async function createOnlineRoom(customId?: string) {
     // Reflect the room in the URL so it can be shared.
     router.replace({ query: { ...route.query, room: res.roomId } })
   } catch (e) {
-    banner.value = { type: 'error', text: $t('lobby.couldNotCreate', { error: String(e) }) }
+    banner.value = { type: 'error', text: $ts('lobby.couldNotCreate', { error: String(e) }) }
   } finally {
     creating.value = false
     loading.finish()
@@ -305,7 +305,7 @@ function joinByInput(asSpectator: boolean) {
     }
   }
   if (!roomId) {
-    banner.value = { type: 'error', text: $t('lobby.enterRoomOrId') }
+    banner.value = { type: 'error', text: $ts('lobby.enterRoomOrId') }
     return
   }
   if (code) createdPasscode.value = code
@@ -389,8 +389,8 @@ const spectatorShareUrl = computed(() => {
           color="neutral"
           size="sm"
           icon="i-lucide-graduation-cap"
-          :title="$t('common.tutorial')"
-          :aria-label="$t('common.tutorial')"
+          :title="$ts('common.tutorial')"
+          :aria-label="$ts('common.tutorial')"
           @click="tutorialRef?.start()"
         />
         <UButton
@@ -398,8 +398,8 @@ const spectatorShareUrl = computed(() => {
           color="neutral"
           size="sm"
           icon="i-lucide-trophy"
-          :title="$t('leaderboard.title')"
-          :aria-label="$t('leaderboard.title')"
+          :title="$ts('leaderboard.title')"
+          :aria-label="$ts('leaderboard.title')"
           @click="showLeaderboard = true"
         />
         <UButton
@@ -407,8 +407,8 @@ const spectatorShareUrl = computed(() => {
           color="neutral"
           size="sm"
           icon="i-lucide-book-open"
-          :title="$t('common.rules')"
-          :aria-label="$t('common.rules')"
+          :title="$ts('common.rules')"
+          :aria-label="$ts('common.rules')"
           @click="showRules = true"
         />
         <UButton
@@ -417,8 +417,8 @@ const spectatorShareUrl = computed(() => {
           variant="ghost"
           color="error"
           icon="i-lucide-x"
-          :title="$t('common.quit')"
-          :aria-label="$t('common.quit')"
+          :title="$ts('common.quit')"
+          :aria-label="$ts('common.quit')"
           @click="quit"
         />
       </div>
@@ -477,36 +477,36 @@ const spectatorShareUrl = computed(() => {
         @click="setupOpen = true"
       >
         <p class="text-3xl mb-1">🃏</p>
-        <p class="font-display font-bold text-lg">{{ $t('common.play') }} {{ title }}</p>
+        <p class="font-display font-bold text-lg">{{ $ts('common.play') }} {{ title }}</p>
         <p class="text-xs mt-1" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('lobby.tapToSetUp') }}
+          {{ $ts('lobby.tapToSetUp') }}
         </p>
       </button>
       <!-- Join an existing online game by link, or room id + code -->
       <div class="cg-surface rounded-2xl p-4 space-y-3">
         <p class="text-sm font-semibold flex items-center gap-1.5">
           <UIcon name="i-lucide-link" :style="{ color: 'var(--cg-accent)' }" />
-          {{ $t('lobby.joinExisting') }}
+          {{ $ts('lobby.joinExisting') }}
         </p>
-        <UFormField :label="$t('lobby.joinByLink')" size="sm">
+        <UFormField :label="$ts('lobby.joinByLink')" size="sm">
           <UInput
             v-model="joinLink"
             size="sm"
             class="w-full"
-            :placeholder="$t('lobby.joinByLinkPlaceholder')"
+            :placeholder="$ts('lobby.joinByLinkPlaceholder')"
             icon="i-lucide-clipboard"
           />
         </UFormField>
         <div class="flex items-center gap-2 text-xs" :style="{ color: 'var(--cg-text-muted)' }">
           <span class="flex-1 border-t" :style="{ borderColor: 'var(--cg-border)' }" />
-          {{ $t('common.or') }}
+          {{ $ts('common.or') }}
           <span class="flex-1 border-t" :style="{ borderColor: 'var(--cg-border)' }" />
         </div>
         <div class="grid grid-cols-2 gap-2">
-          <UFormField :label="$t('lobby.roomId')" size="sm">
+          <UFormField :label="$ts('lobby.roomId')" size="sm">
             <UInput v-model="joinRoomId" size="sm" class="w-full" icon="i-lucide-hash" />
           </UFormField>
-          <UFormField :label="$t('lobby.code')" :hint="$t('common.optional')" size="sm">
+          <UFormField :label="$ts('lobby.code')" :hint="$ts('common.optional')" size="sm">
             <UInput v-model="joinCode" size="sm" class="w-full" icon="i-lucide-key-round" />
           </UFormField>
         </div>
@@ -517,7 +517,7 @@ const spectatorShareUrl = computed(() => {
             class="flex-1 justify-center"
             @click="joinByInput(false)"
           >
-            {{ $t('lobby.joinAsPlayer') }}
+            {{ $ts('lobby.joinAsPlayer') }}
           </UButton>
           <UButton
             variant="outline"
@@ -526,14 +526,14 @@ const spectatorShareUrl = computed(() => {
             class="flex-1 justify-center"
             @click="joinByInput(true)"
           >
-            {{ $t('lobby.spectate') }}
+            {{ $ts('lobby.spectate') }}
           </UButton>
         </div>
       </div>
 
       <div class="flex flex-wrap justify-center gap-2">
         <UButton variant="soft" color="neutral" icon="i-lucide-radio" :to="$localePath('/rooms')">
-          {{ $t('lobby.browseRooms') }}
+          {{ $ts('lobby.browseRooms') }}
         </UButton>
         <UButton
           variant="soft"
@@ -541,7 +541,7 @@ const spectatorShareUrl = computed(() => {
           icon="i-lucide-trophy"
           @click="showLeaderboard = true"
         >
-          {{ $t('leaderboard.title') }}
+          {{ $ts('leaderboard.title') }}
         </UButton>
       </div>
     </div>
@@ -550,8 +550,8 @@ const spectatorShareUrl = computed(() => {
       v-else
       color="error"
       variant="subtle"
-      :title="$t('lobby.unknownGame')"
-      :description="$t('lobby.unknownGameDesc', { id: gameId })"
+      :title="$ts('lobby.unknownGame')"
+      :description="$ts('lobby.unknownGameDesc', { id: gameId })"
     />
 
     <GameSetupModal
@@ -567,27 +567,27 @@ const spectatorShareUrl = computed(() => {
     <!-- Passcode prompt for a private (locked) room -->
     <UModal
       :open="codePrompt !== null"
-      :title="$t('lobby.privateRoom')"
+      :title="$ts('lobby.privateRoom')"
       :ui="codeModalUi"
       @update:open="(o: boolean) => { if (!o) codePrompt = null }"
     >
       <template #body>
         <form class="space-y-3" @submit.prevent="submitCode">
           <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ codePrompt?.spectate ? $t('lobby.privateRoomWatch') : $t('lobby.privateRoomJoin') }}
+            {{ codePrompt?.spectate ? $ts('lobby.privateRoomWatch') : $ts('lobby.privateRoomJoin') }}
           </p>
           <UInput
             v-model="codeInput"
-            :placeholder="$t('lobby.passcode')"
+            :placeholder="$ts('lobby.passcode')"
             autofocus
             size="lg"
           />
           <div class="flex justify-end gap-2">
             <UButton variant="ghost" color="neutral" @click="codePrompt = null">
-              {{ $t('game.cancel') }}
+              {{ $ts('game.cancel') }}
             </UButton>
             <UButton type="submit" color="primary" :disabled="!codeInput.trim()">
-              {{ $t('common.start') }}
+              {{ $ts('common.start') }}
             </UButton>
           </div>
         </form>

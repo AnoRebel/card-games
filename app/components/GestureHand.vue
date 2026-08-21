@@ -162,7 +162,7 @@ defineExpose({ cardEl, rootEl })
       class="absolute -bottom-1 text-[10px] uppercase tracking-wider sm:hidden"
       :style="{ color: 'var(--cg-text-muted)' }"
     >
-      {{ $t('game.swipeHint') }}
+      {{ $ts('game.swipeHint') }}
     </span>
   </div>
 </template>

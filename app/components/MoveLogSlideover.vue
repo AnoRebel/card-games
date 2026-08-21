@@ -34,7 +34,7 @@ watch(open, (o) => {
       type="button"
       class="fixed bottom-4 left-4 z-40 flex items-center gap-2 rounded-full pl-3 pr-4 py-2 shadow-xl transition hover:scale-105 max-w-[60vw]"
       :style="{ background: 'var(--cg-surface-solid)', border: '1px solid var(--cg-border)' }"
-      :title="$t('game.moves')"
+      :title="$ts('game.moves')"
       data-tour="moves"
       @click="open = true"
     >
@@ -52,15 +52,15 @@ watch(open, (o) => {
           {{ entries[0]?.who }} {{ entries[0]?.action }}
           <span :class="suitColor(entries[0]?.card)">{{ entries[0]?.card }}</span>
         </template>
-        <template v-else>{{ $t('game.moves') }}</template>
+        <template v-else>{{ $ts('game.moves') }}</template>
       </span>
     </button>
 
-    <USlideover v-model:open="open" :title="$t('game.moves')" side="left" :ui="modalUi">
+    <USlideover v-model:open="open" :title="$ts('game.moves')" side="left" :ui="modalUi">
       <template #body>
         <div v-if="!entries.length" class="flex flex-col items-center gap-2 py-12 text-center">
           <UIcon name="i-lucide-scroll-text" class="text-3xl" :style="{ color: 'var(--cg-text-muted)' }" />
-          <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">{{ $t('game.noMoves') }}</p>
+          <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('game.noMoves') }}</p>
         </div>
         <ol v-else class="space-y-1.5">
           <li

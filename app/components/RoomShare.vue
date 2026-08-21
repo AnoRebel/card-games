@@ -13,7 +13,7 @@ const props = defineProps<{
   spectatorUrl?: string
   title?: string
 }>()
-const { $t } = useI18n()
+const { $ts } = useI18n()
 const { track } = useAnalytics()
 const { share, isSupported: canShare } = useShare()
 
@@ -42,7 +42,7 @@ const qrSvg = computed(() => {
 async function nativeShare() {
   track('share_link_copied', { kind: `native-${kind.value}` })
   try {
-    await share({ title: props.title ?? 'Card Games', text: $t('invite.shareText'), url: activeUrl.value })
+    await share({ title: props.title ?? 'Card Games', text: $ts('invite.shareText'), url: activeUrl.value })
   } catch { /* user cancelled */ }
 }
 </script>
@@ -50,7 +50,7 @@ async function nativeShare() {
 <template>
   <UPopover>
     <UButton size="xs" variant="soft" color="primary" icon="i-lucide-qr-code">
-      {{ $t('invite.invite') }}
+      {{ $ts('invite.invite') }}
     </UButton>
     <template #content>
       <div class="p-3 space-y-3 w-60 text-center">
@@ -63,7 +63,7 @@ async function nativeShare() {
             :color="kind === 'player' ? 'primary' : 'neutral'"
             @click="kind = 'player'"
           >
-            {{ $t('invite.playerLink') }}
+            {{ $ts('invite.playerLink') }}
           </UButton>
           <UButton
             size="xs"
@@ -73,12 +73,12 @@ async function nativeShare() {
             :color="kind === 'spectator' ? 'primary' : 'neutral'"
             @click="kind = 'spectator'"
           >
-            {{ $t('invite.spectatorLink') }}
+            {{ $ts('invite.spectatorLink') }}
           </UButton>
         </UFieldGroup>
 
         <p class="text-xs font-medium" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('invite.scanToJoin') }}
+          {{ $ts('invite.scanToJoin') }}
         </p>
         <!-- eslint-disable-next-line vue/no-v-html -- our own generated QR SVG, not user input -->
         <div class="mx-auto w-40 h-40 rounded-lg overflow-hidden bg-white p-2 [&>svg]:w-full [&>svg]:h-full" v-html="qrSvg" />
@@ -91,7 +91,7 @@ async function nativeShare() {
             icon="i-lucide-share-2"
             @click="nativeShare"
           >
-            {{ $t('invite.share') }}
+            {{ $ts('invite.share') }}
           </UButton>
           <UButton
             size="xs"
@@ -101,7 +101,7 @@ async function nativeShare() {
             :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
             @click="copy()"
           >
-            {{ copied ? $t('game.copied') : $t('invite.copyLink') }}
+            {{ copied ? $ts('game.copied') : $ts('invite.copyLink') }}
           </UButton>
         </div>
       </div>

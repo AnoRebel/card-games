@@ -54,16 +54,16 @@ const winnerNames = computed(() =>
 </script>
 
 <template>
-  <UModal v-model:open="open" :title="$t('game.gameOver')" :ui="modalUi">
+  <UModal v-model:open="open" :title="$ts('game.gameOver')" :ui="modalUi">
     <template #body>
       <!-- Host-ended (no natural result) -->
       <div v-if="!scores" class="text-center space-y-2 py-2">
         <p class="text-4xl">🛑</p>
         <p class="font-display text-lg font-bold">
-          {{ $t('game.endedByHost', { name: endedBy || $t('game.theHost') }) }}
+          {{ $ts('game.endedByHost', { name: endedBy || $ts('game.theHost') }) }}
         </p>
         <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('game.endedByHostBody') }}
+          {{ $ts('game.endedByHostBody') }}
         </p>
       </div>
 
@@ -73,10 +73,10 @@ const winnerNames = computed(() =>
         <div class="text-center space-y-1">
           <p class="text-4xl">{{ youWon ? '🏆' : '🎴' }}</p>
           <p class="font-display text-lg font-bold">
-            {{ youWon ? $t('game.youWin') : $t('game.wins', { name: winnerNames || '—' }) }}
+            {{ youWon ? $ts('game.youWin') : $ts('game.wins', { name: winnerNames || '—' }) }}
           </p>
           <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ useVp ? $t('game.scoredVp') : $t('game.scoredPenalty') }}
+            {{ useVp ? $ts('game.scoredVp') : $ts('game.scoredPenalty') }}
           </p>
         </div>
 
@@ -95,7 +95,7 @@ const winnerNames = computed(() =>
             <span class="flex-1 truncate font-medium">
               {{ row.name }}
               <span v-if="row.you" class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-                ({{ $t('game.you') }})
+                ({{ $ts('game.you') }})
               </span>
             </span>
             <span class="text-lg font-bold tabular-nums" :style="{ color: row.won ? 'var(--cg-accent)' : 'var(--cg-text)' }">
@@ -109,7 +109,7 @@ const winnerNames = computed(() =>
       <div class="w-full space-y-2">
         <!-- Highest-intent moment to invite the group to play again -->
         <div v-if="shareUrl" class="flex justify-center">
-          <RoomShare :share-url="shareUrl" :title="$t('app.title')" />
+          <RoomShare :share-url="shareUrl" :title="$ts('app.title')" />
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
         <UButton
@@ -119,13 +119,13 @@ const winnerNames = computed(() =>
           class="justify-center"
           @click="emit('rematch')"
         >
-          {{ $t('game.rematch') }}
+          {{ $ts('game.rematch') }}
         </UButton>
         <UButton variant="outline" color="neutral" icon="i-lucide-settings-2" class="justify-center" @click="emit('newGame')">
-          {{ $t('game.newGame') }}
+          {{ $ts('game.newGame') }}
         </UButton>
         <UButton variant="ghost" color="error" icon="i-lucide-log-out" class="justify-center" @click="emit('exit')">
-          {{ $t('game.exit') }}
+          {{ $ts('game.exit') }}
         </UButton>
         </div>
       </div>

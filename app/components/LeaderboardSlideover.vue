@@ -42,7 +42,7 @@ const rows = computed<Row[]>(() =>
 const modalUi = useThemedModalUi()
 const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
 
-// `labelKey` resolves via $t in the template so scope labels follow the locale.
+// `labelKey` resolves via $ts in the template so scope labels follow the locale.
 // The two local scopes are labelled "my games" / "my offline games" — calling
 // the first one "All" read as "global + local", which it never was.
 const scopes: { id: Scope; labelKey: string; icon: string }[] = [
@@ -53,7 +53,7 @@ const scopes: { id: Scope; labelKey: string; icon: string }[] = [
 </script>
 
 <template>
-  <USlideover v-model:open="open" :title="$t('leaderboard.title')" side="right" :ui="modalUi">
+  <USlideover v-model:open="open" :title="$ts('leaderboard.title')" side="right" :ui="modalUi">
     <template #body>
       <div class="space-y-4">
         <UFieldGroup class="w-full flex-wrap">
@@ -67,19 +67,19 @@ const scopes: { id: Scope; labelKey: string; icon: string }[] = [
             class="flex-1 justify-center"
             @click="scope = s.id"
           >
-            {{ $t(s.labelKey) }}
+            {{ $ts(s.labelKey) }}
           </UButton>
         </UFieldGroup>
 
         <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ scope === 'global' ? $t('leaderboard.globalCaption') : $t('leaderboard.localCaption') }}
+          {{ scope === 'global' ? $ts('leaderboard.globalCaption') : $ts('leaderboard.localCaption') }}
         </p>
 
         <p v-if="scope === 'global' && globalUnavailable" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('leaderboard.globalUnavailable') }}
+          {{ $ts('leaderboard.globalUnavailable') }}
         </p>
         <p v-else-if="!rows.length" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $t('leaderboard.empty') }}
+          {{ $ts('leaderboard.empty') }}
         </p>
         <ol v-else class="space-y-0.5">
           <li
@@ -91,8 +91,8 @@ const scopes: { id: Scope; labelKey: string; icon: string }[] = [
             <span class="w-7 text-center text-lg">{{ medal(i) }}</span>
             <span class="flex-1 truncate font-medium">{{ row.playerName }}</span>
             <span class="text-sm whitespace-nowrap" :style="{ color: 'var(--cg-text-muted)' }">
-              {{ $t('leaderboard.wins', { count: row.wins }) }} ·
-              {{ $t('leaderboard.played', { count: row.played }) }}
+              {{ $ts('leaderboard.wins', { count: row.wins }) }} ·
+              {{ $ts('leaderboard.played', { count: row.played }) }}
             </span>
           </li>
         </ol>

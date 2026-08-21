@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { $t, $switchLocale, $getLocales, $getLocale, $localePath } = useI18n()
+const { $ts, $switchLocale, $getLocales, $getLocale, $localePath } = useI18n()
 const { isDark, toggle } = useThemeMode()
 const settings = useSettingsPanel()
 
@@ -40,7 +40,7 @@ const locales = computed(() => $getLocales())
               color="neutral"
               size="sm"
               icon="i-lucide-languages"
-              :title="$t('common.language')"
+              :title="$ts('common.language')"
             >
               {{ $getLocale().toUpperCase() }}
             </UButton>
@@ -52,8 +52,8 @@ const locales = computed(() => $getLocales())
               variant="ghost"
               color="neutral"
               size="sm"
-              :title="isDark ? $t('theme.lightMode') : $t('theme.darkMode')"
-              :aria-label="isDark ? $t('theme.lightMode') : $t('theme.darkMode')"
+              :title="isDark ? $ts('theme.lightMode') : $ts('theme.darkMode')"
+              :aria-label="isDark ? $ts('theme.lightMode') : $ts('theme.darkMode')"
               @click="(e: MouseEvent) => toggle(e)"
             />
             <template #fallback>
@@ -65,8 +65,8 @@ const locales = computed(() => $getLocales())
             color="neutral"
             size="sm"
             icon="i-lucide-settings"
-            :title="$t('common.settings')"
-            :aria-label="$t('common.settings')"
+            :title="$ts('common.settings')"
+            :aria-label="$ts('common.settings')"
             @click="settings.show()"
           />
         </div>
