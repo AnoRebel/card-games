@@ -5,18 +5,18 @@
  * user's reduced-motion preference (the suit float is anime.js; the shimmer +
  * heart are pure CSS that respects `prefers-reduced-motion`).
  */
-const year = new Date().getFullYear()
-const suits = ['♠', '♥', '♦', '♣']
-const pipsRef = ref<HTMLElement | null>(null)
+const year = new Date().getFullYear();
+const suits = ["♠", "♥", "♦", "♣"];
+const pipsRef = ref<HTMLElement | null>(null);
 // Build-stamped app version, so a player can report exactly what they're running.
-const version = useRuntimeConfig().public.appVersion as string
+const version = useRuntimeConfig().public.appVersion as string;
 
 onMounted(() => {
-  if (!pipsRef.value) return
+  if (!pipsRef.value) return;
   // Soft, continuous bob — each pip offset so they ripple rather than sync.
   // floatLoop() is reduced-motion aware (no-op when the user opts out).
-  floatLoop(Array.from(pipsRef.value.querySelectorAll<HTMLElement>('[data-pip]')))
-})
+  floatLoop(Array.from(pipsRef.value.querySelectorAll<HTMLElement>("[data-pip]")));
+});
 </script>
 
 <template>
@@ -37,7 +37,8 @@ onMounted(() => {
           data-pip
           class="inline-block"
           :style="{ color: i % 2 ? 'oklch(0.7 0.2 25)' : 'var(--cg-text-muted)' }"
-        >{{ s }}</span>
+          >{{ s }}</span
+        >
       </span>
 
       <span :style="{ color: 'var(--cg-text-muted)' }">Made with</span>
@@ -62,14 +63,17 @@ onMounted(() => {
         class="text-[10px] font-mono tabular-nums opacity-60"
         :style="{ color: 'var(--cg-text-muted)' }"
         :title="`Version ${version}`"
-      >v{{ version }}</span>
+        >v{{ version }}</span
+      >
     </div>
   </footer>
 </template>
 
 <style scoped>
 .cg-credit {
-  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s;
 }
 .cg-credit:hover {
   transform: translateY(-2px);

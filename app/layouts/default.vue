@@ -1,9 +1,9 @@
 <script setup lang="ts">
-const { $ts, $switchLocale, $getLocales, $getLocale, $localePath } = useI18n()
-const { isDark, toggle } = useThemeMode()
-const settings = useSettingsPanel()
+const { $ts, $switchLocale, $getLocales, $getLocale, $localePath } = useI18n();
+const { isDark, toggle } = useThemeMode();
+const settings = useSettingsPanel();
 
-const locales = computed(() => $getLocales())
+const locales = computed(() => $getLocales());
 </script>
 
 <template>
@@ -30,10 +30,12 @@ const locales = computed(() => $getLocales())
 
         <div class="flex items-center gap-0.5">
           <UDropdownMenu
-            :items="locales.map((l) => ({
-              label: l.code.toUpperCase(),
-              onSelect: () => $switchLocale(l.code),
-            }))"
+            :items="
+              locales.map((l) => ({
+                label: l.code.toUpperCase(),
+                onSelect: () => $switchLocale(l.code),
+              }))
+            "
           >
             <UButton
               variant="ghost"

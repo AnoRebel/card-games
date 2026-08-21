@@ -8,23 +8,23 @@
  * useTourGuide() composable, which is a separate instance and won't control
  * this manager's steps.
  */
-import { TourGuideManager } from 'v-tour-guide'
-import 'v-tour-guide/style.css'
+import { TourGuideManager } from "v-tour-guide";
+import "v-tour-guide/style.css";
 
-const props = defineProps<{ gameId: string }>()
+const props = defineProps<{ gameId: string }>();
 
-const { tutorial } = useGameContent(props.gameId)
+const { tutorial } = useGameContent(props.gameId);
 
 // Only include steps whose target element is actually present, so v-tour-guide
 // never stalls on a missing anchor. Recomputed when the tour is launched.
-const presentTargets = ref<Set<string>>(new Set())
+const presentTargets = ref<Set<string>>(new Set());
 function refreshTargets() {
-  if (!import.meta.client) return
-  const found = new Set<string>()
+  if (!import.meta.client) return;
+  const found = new Set<string>();
   for (const s of tutorial.value) {
-    if (document.querySelector(s.target)) found.add(s.target)
+    if (document.querySelector(s.target)) found.add(s.target);
   }
-  presentTargets.value = found
+  presentTargets.value = found;
 }
 
 const steps = computed(() =>
@@ -36,41 +36,41 @@ const steps = computed(() =>
       content: s.content,
       target: s.target,
     })),
-)
+);
 
 const manager = ref<{
-  startTourGuide: () => void
-  skipTourGuide: () => void
-} | null>(null)
+  startTourGuide: () => void;
+  skipTourGuide: () => void;
+} | null>(null);
 
-const seen = useLocalStorage(`cg:tutorial-seen:${props.gameId}`, false)
-const showOffer = ref(false)
+const seen = useLocalStorage(`cg:tutorial-seen:${props.gameId}`, false);
+const showOffer = ref(false);
 
 onMounted(() => {
   if (!seen.value && steps.value.length) {
     // Slight delay so the target elements (hand/table) are mounted first.
-    setTimeout(() => (showOffer.value = true), 600)
+    setTimeout(() => (showOffer.value = true), 600);
   }
-})
+});
 
 function launch() {
-  refreshTargets()
-  nextTick(() => manager.value?.startTourGuide())
+  refreshTargets();
+  nextTick(() => manager.value?.startTourGuide());
 }
 function start() {
-  showOffer.value = false
-  seen.value = true
-  launch()
+  showOffer.value = false;
+  seen.value = true;
+  launch();
 }
 function dismiss() {
-  showOffer.value = false
-  seen.value = true
+  showOffer.value = false;
+  seen.value = true;
 }
 
 defineExpose({
   start: launch,
   stop: () => manager.value?.skipTourGuide(),
-})
+});
 </script>
 
 <template>
@@ -84,15 +84,15 @@ defineExpose({
 
     <UModal v-model:open="showOffer" :title="$ts('tutorial.offerTitle')">
       <template #body>
-        <p class="text-sm text-muted">{{ $ts('tutorial.offerBody') }}</p>
+        <p class="text-sm text-muted">{{ $ts("tutorial.offerBody") }}</p>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end">
           <UButton variant="ghost" color="neutral" @click="dismiss">
-            {{ $ts('tutorial.noThanks') }}
+            {{ $ts("tutorial.noThanks") }}
           </UButton>
           <UButton color="primary" icon="i-lucide-graduation-cap" @click="start">
-            {{ $ts('tutorial.startTour') }}
+            {{ $ts("tutorial.startTour") }}
           </UButton>
         </div>
       </template>

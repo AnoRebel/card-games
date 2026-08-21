@@ -16,20 +16,21 @@ import {
   seatOrder,
   shuffle,
   standardDeck,
-} from '@card-games/engine-core'
-import { type LastCardConfig, cardPenaltyValue, defaultLastCardConfig } from './config'
-import type { LastCardMove, LastCardState, PendingActionChain } from './state'
+} from "@card-games/engine-core";
+import { type LastCardConfig, cardPenaltyValue, defaultLastCardConfig } from "./config";
+import type { LastCardMove, LastCardState, PendingActionChain } from "./state";
 
 // A card's config "rank key": jokers use 0 (their placeholder rank), so all the
 // rank-keyed config lists (pickup/skip/reverse/suit-change) target them via 0.
-const rankKey = (c: Card): number => (isJoker(c) ? 0 : c.rank)
+const rankKey = (c: Card): number => (isJoker(c) ? 0 : c.rank);
 const isPickup = (c: Card, cfg: LastCardConfig) =>
-  cfg.pickupCards.find((p) => p.rank === rankKey(c))
-const isSkip = (c: Card, cfg: LastCardConfig) => cfg.skipCards.includes(rankKey(c) as never)
+  cfg.pickupCards.find((p) => p.rank === rankKey(c));
+const isSkip = (c: Card, cfg: LastCardConfig) =>
+  cfg.skipCards.includes(rankKey(c) as never);
 const isReverse = (c: Card, cfg: LastCardConfig) =>
-  cfg.reverseCards.includes(rankKey(c) as never)
+  cfg.reverseCards.includes(rankKey(c) as never);
 const isSuitChange = (c: Card, cfg: LastCardConfig) =>
-  cfg.suitChangeCards.includes(rankKey(c) as never)
+  cfg.suitChangeCards.includes(rankKey(c) as never);
 
 /**
  * Is `hand` a "last card(s)" state — i.e. it can be emptied in ONE more play,
@@ -38,83 +39,80 @@ const isSuitChange = (c: Card, cfg: LastCardConfig) =>
  * player will dump together next turn).
  */
 function isLastGroup(hand: readonly Card[], cfg: LastCardConfig): boolean {
-  if (hand.length === 1) return true
-  if (!cfg.allowMultiSameRank || hand.length < 2) return false
-  const rank = hand[0]!.rank
-  return hand.every((c) => c.rank === rank)
+  if (hand.length === 1) return true;
+  if (!cfg.allowMultiSameRank || hand.length < 2) return false;
+  const rank = hand[0]!.rank;
+  return hand.every((c) => c.rank === rank);
 }
 
 /** Top discard card (the pile is never empty during play). */
 function topDiscard(state: LastCardState): Card {
-  const top = state.discardPile[state.discardPile.length - 1]
-  if (!top) throw new Error('Last Card: empty discard pile during play')
-  return top
+  const top = state.discardPile[state.discardPile.length - 1];
+  if (!top) throw new Error("Last Card: empty discard pile during play");
+  return top;
 }
 
 /** Can `card` be legally played onto the current table state? */
 export function canPlay(state: LastCardState, card: Card): boolean {
-  const cfg = state.config
-  const top = topDiscard(state)
+  const cfg = state.config;
+  const top = topDiscard(state);
 
   // While a pickup penalty is pending, only a pickup card may be played (to
   // stack); otherwise the seat must draw the penalty. Stacking is ORDERED — the
   // added card's amount must be ≥ the last pickup's amount, so a Joker (+5) may
   // stack onto a pending 2, but a 2 (+2) may not stack onto a pending Joker.
   if (state.pendingPickup > 0) {
-    if (!cfg.allowPickupStacking) return false
-    const pk = isPickup(card, cfg)
-    return pk !== undefined && pk.amount >= state.pendingPickupUnit
+    if (!cfg.allowPickupStacking) return false;
+    const pk = isPickup(card, cfg);
+    return pk !== undefined && pk.amount >= state.pendingPickupUnit;
   }
 
   // Jokers and suit-change (wild) cards are always playable.
-  if (isJoker(card) || isSuitChange(card, cfg)) return true
+  if (isJoker(card) || isSuitChange(card, cfg)) return true;
 
   // Otherwise match the active suit or the top card's rank. A joker on top has
   // no suit/rank of its own — the active suit still carries (jokers don't change
   // it), so `activeSuit` remains the thing to match.
-  return card.suit === state.activeSuit || card.rank === top.rank
+  return card.suit === state.activeSuit || card.rank === top.rank;
 }
 
 /** Deal a fresh round into `state` fields (mutates the passed draft). */
 function dealRound(
   players: Player[],
   config: LastCardConfig,
-  rng: LastCardState['rng'],
-): Pick<
-  LastCardState,
-  'hands' | 'drawPile' | 'discardPile' | 'activeSuit' | 'rng'
-> {
+  rng: LastCardState["rng"],
+): Pick<LastCardState, "hands" | "drawPile" | "discardPile" | "activeSuit" | "rng"> {
   // 54-card deck: the two jokers are the pick-up-five cards.
-  const shuffled = shuffle(standardDeck(true), rng)
-  let deck = shuffled.items
-  let r = shuffled.state
+  const shuffled = shuffle(standardDeck(true), rng);
+  let deck = shuffled.items;
+  let r = shuffled.state;
 
-  const hands: Record<Seat, Card[]> = {}
-  for (const p of players) hands[p.seat] = []
+  const hands: Record<Seat, Card[]> = {};
+  for (const p of players) hands[p.seat] = [];
   for (let i = 0; i < config.handSize; i++) {
     for (const p of players) {
-      hands[p.seat]!.push(deck.shift() as Card)
+      hands[p.seat]!.push(deck.shift() as Card);
     }
   }
 
   // Turn the starting card; optionally re-draw past action cards.
-  let start = deck.shift() as Card
+  let start = deck.shift() as Card;
   if (config.redrawActionStart) {
     const action = (c: Card) =>
       isPickup(c, config) !== undefined ||
       isSkip(c, config) ||
       isReverse(c, config) ||
-      isSuitChange(c, config)
-    const buried: Card[] = []
+      isSuitChange(c, config);
+    const buried: Card[] = [];
     while (action(start) && deck.length > 0) {
-      buried.push(start)
-      start = deck.shift() as Card
+      buried.push(start);
+      start = deck.shift() as Card;
     }
     // Bury the skipped action cards back into the deck (then reshuffle).
     if (buried.length) {
-      const res = shuffle([...deck, ...buried], r)
-      deck = res.items
-      r = res.state
+      const res = shuffle([...deck, ...buried], r);
+      deck = res.items;
+      r = res.state;
     }
   }
 
@@ -124,7 +122,7 @@ function dealRound(
     discardPile: [start],
     activeSuit: start.suit,
     rng: r,
-  }
+  };
 }
 
 /** Build the initial Last Card state. */
@@ -133,18 +131,18 @@ export function createInitialState(
   players: Player[],
   seed: string | number,
 ): LastCardState {
-  const rng = createRng(seed)
-  const dealt = dealRound(players, config, rng)
-  const cumulativeScores: Record<Seat, number> = {}
-  for (const p of players) cumulativeScores[p.seat] = 0
+  const rng = createRng(seed);
+  const dealt = dealRound(players, config, rng);
+  const cumulativeScores: Record<Seat, number> = {};
+  for (const p of players) cumulativeScores[p.seat] = 0;
 
   return {
-    gameId: 'last-card',
+    gameId: "last-card",
     config,
     rng: dealt.rng,
     players,
     activeSeat: players[0]!.seat,
-    phase: 'playing',
+    phase: "playing",
     version: 0,
     hands: dealt.hands,
     drawPile: dealt.drawPile,
@@ -159,33 +157,37 @@ export function createInitialState(
     round: 0,
     cumulativeScores,
     roundWinner: null,
-  }
+  };
 }
 
 /** Reshuffle the discard pile (except its top) back into the draw pile. */
 function refillDrawPile(state: LastCardState): {
-  drawPile: Card[]
-  discardPile: Card[]
-  rng: LastCardState['rng']
+  drawPile: Card[];
+  discardPile: Card[];
+  rng: LastCardState["rng"];
 } {
   if (state.drawPile.length > 0 || state.discardPile.length <= 1) {
-    return { drawPile: state.drawPile, discardPile: state.discardPile, rng: state.rng }
+    return { drawPile: state.drawPile, discardPile: state.discardPile, rng: state.rng };
   }
-  const top = state.discardPile[state.discardPile.length - 1]!
-  const rest = state.discardPile.slice(0, -1)
-  const res = shuffle(rest, state.rng)
-  return { drawPile: res.items, discardPile: [top], rng: res.state }
+  const top = state.discardPile[state.discardPile.length - 1]!;
+  const rest = state.discardPile.slice(0, -1);
+  const res = shuffle(rest, state.rng);
+  return { drawPile: res.items, discardPile: [top], rng: res.state };
 }
 
-const playerCount = (state: LastCardState) => state.players.length
+const playerCount = (state: LastCardState) => state.players.length;
 
 /**
  * Does a card belong to `chain`'s rank family? Interjections match by RANK only
  * (any 7 answers a 7, any 8 answers an 8) — suit is irrelevant, exactly as
  * pickup stacking already works.
  */
-function matchesChain(card: Card, chain: PendingActionChain, cfg: LastCardConfig): boolean {
-  return chain.kind === 'skip' ? isSkip(card, cfg) : isReverse(card, cfg)
+function matchesChain(
+  card: Card,
+  chain: PendingActionChain,
+  cfg: LastCardConfig,
+): boolean {
+  return chain.kind === "skip" ? isSkip(card, cfg) : isReverse(card, cfg);
 }
 
 /**
@@ -194,7 +196,7 @@ function matchesChain(card: Card, chain: PendingActionChain, cfg: LastCardConfig
  * convention (and this project's rule) is that reverse then acts as a SKIP:
  * one reverse returns the turn to the player, two pass it on.
  */
-const reverseActsAsSkip = (state: LastCardState) => playerCount(state) === 2
+const reverseActsAsSkip = (state: LastCardState) => playerCount(state) === 2;
 
 /**
  * Seats that may still interject into `chain` — anyone holding a matching card
@@ -202,20 +204,20 @@ const reverseActsAsSkip = (state: LastCardState) => playerCount(state) === 2
  * "stop themselves", forfeiting their turn to push it onward.
  */
 function eligibleInterjectors(state: LastCardState, chain: PendingActionChain): Seat[] {
-  const cfg = state.config
-  if (!cfg.allowActionInterjection) return []
+  const cfg = state.config;
+  if (!cfg.allowActionInterjection) return [];
   return state.players
     .map((p) => p.seat)
     .filter((seat) => {
-      if (chain.passed.includes(seat)) return false
-      const hand = state.hands[seat] ?? []
+      if (chain.passed.includes(seat)) return false;
+      const hand = state.hands[seat] ?? [];
       // A seat whose ONLY card is a chain card cannot legally play it (you may
       // not go out on an action card), so it is NOT eligible. This must mirror
       // getLegalMoves exactly: polling a seat with no playable move would park
       // `activeSeat` on someone who cannot act and deadlock the game.
-      if (hand.length === 1 && !cfg.allowActionCardFinish) return false
-      return hand.some((c) => matchesChain(c, chain, cfg))
-    })
+      if (hand.length === 1 && !cfg.allowActionCardFinish) return false;
+      return hand.some((c) => matchesChain(c, chain, cfg));
+    });
 }
 
 /**
@@ -228,25 +230,26 @@ function eligibleInterjectors(state: LastCardState, chain: PendingActionChain): 
  * instead behaves as a skip, so the parity decides whether the turn comes back.
  */
 function resolveChain(state: LastCardState, chain: PendingActionChain): void {
-  const count = playerCount(state)
+  const count = playerCount(state);
 
-  if (chain.kind === 'reverse') {
+  if (chain.kind === "reverse") {
     if (reverseActsAsSkip(state)) {
       // Heads-up: each reverse is a skip. An ODD number of skips bounces the
       // turn back to the opener; an even number passes it to the opponent.
-      state.direction = chain.baseDirection
-      state.activeSeat = stepSeat(chain.origin, count, chain.count + 1, state.direction)
+      state.direction = chain.baseDirection;
+      state.activeSeat = stepSeat(chain.origin, count, chain.count + 1, state.direction);
     } else {
-      const flipped = chain.count % 2 === 1
-      state.direction = (flipped ? chain.baseDirection * -1 : chain.baseDirection) as 1 | -1
-      state.activeSeat = nextSeat(chain.origin, count, state.direction)
+      const flipped = chain.count % 2 === 1;
+      state.direction = (flipped ? chain.baseDirection * -1 : chain.baseDirection) as
+        1 | -1;
+      state.activeSeat = nextSeat(chain.origin, count, state.direction);
     }
   } else {
-    state.direction = chain.baseDirection
-    state.activeSeat = stepSeat(chain.origin, count, chain.count + 1, state.direction)
+    state.direction = chain.baseDirection;
+    state.activeSeat = stepSeat(chain.origin, count, chain.count + 1, state.direction);
   }
 
-  state.pendingAction = null
+  state.pendingAction = null;
 }
 
 /**
@@ -260,22 +263,26 @@ function resolveChain(state: LastCardState, chain: PendingActionChain): void {
  * is deterministic and every eligible seat gets exactly one say per extension.
  */
 function settleChain(state: LastCardState): void {
-  const chain = state.pendingAction
-  if (!chain) return
-  const eligible = eligibleInterjectors(state, chain)
+  const chain = state.pendingAction;
+  if (!chain) return;
+  const eligible = eligibleInterjectors(state, chain);
   if (eligible.length === 0) {
-    resolveChain(state, chain)
-    return
+    resolveChain(state, chain);
+    return;
   }
-  const count = playerCount(state)
-  const order = seatOrder(nextSeat(chain.origin, count, state.direction), count, state.direction)
-  state.activeSeat = order.find((s) => eligible.includes(s)) ?? eligible[0]!
+  const count = playerCount(state);
+  const order = seatOrder(
+    nextSeat(chain.origin, count, state.direction),
+    count,
+    state.direction,
+  );
+  state.activeSeat = order.find((s) => eligible.includes(s)) ?? eligible[0]!;
 }
 
 /** Legal moves for `seat`. */
 export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] {
-  if (state.phase === 'finished') return []
-  const cfg = state.config
+  if (state.phase === "finished") return [];
+  const cfg = state.config;
 
   // A seat that reduced to its last card(s) (a single card, or one same-rank
   // group) but hasn't declared may call "Last Card" OUT OF TURN — before the
@@ -285,111 +292,121 @@ export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] 
   // guaranteed the missed-call penalty.
   const declareMoves: LastCardMove[] =
     state.config.requireLastCardCall && state.awaitingCall === seat
-      ? [{ type: 'declare-last-card', seat }]
-      : []
+      ? [{ type: "declare-last-card", seat }]
+      : [];
 
-  const hand = state.hands[seat] ?? []
+  const hand = state.hands[seat] ?? [];
 
   // An open skip/reverse chain SUSPENDS normal play: nobody takes a regular
   // turn until it resolves. Any eligible seat (including the one the stop rests
   // on) may interject a matching card or pass.
-  const chain = state.pendingAction
+  const chain = state.pendingAction;
   if (chain) {
-    if (!cfg.allowActionInterjection || chain.passed.includes(seat)) return declareMoves
+    if (!cfg.allowActionInterjection || chain.passed.includes(seat)) return declareMoves;
     // Only the seat currently being asked may act, so responses stay ordered and
     // clients never race. `settleChain` parks `activeSeat` on that seat.
-    if (state.activeSeat !== seat) return declareMoves
-    const matching = hand.filter((c) => matchesChain(c, chain, cfg))
-    if (!matching.length) return declareMoves
+    if (state.activeSeat !== seat) return declareMoves;
+    const matching = hand.filter((c) => matchesChain(c, chain, cfg));
+    if (!matching.length) return declareMoves;
 
-    const moves: LastCardMove[] = [...declareMoves]
-    const seenRankSuit = new Set<string>()
+    const moves: LastCardMove[] = [...declareMoves];
+    const seenRankSuit = new Set<string>();
     for (const card of matching) {
       // One option per distinct card identity; a chain card's suit still becomes
       // the new active suit, so different suits are genuinely different moves.
-      if (seenRankSuit.has(cardId(card))) continue
-      seenRankSuit.add(cardId(card))
+      if (seenRankSuit.has(cardId(card))) continue;
+      seenRankSuit.add(cardId(card));
       // You cannot go out on an action card unless the variant allows it — an
       // interjection is a play like any other.
-      if (hand.length === 1 && !cfg.allowActionCardFinish) continue
-      const base = { type: 'interject' as const, seat, card }
-      moves.push(base)
-      const remainder = hand.filter((c) => cardId(c) !== cardId(card))
-      if (cfg.requireLastCardCall && remainder.length >= 1 && isLastGroup(remainder, cfg)) {
-        moves.push({ ...base, declareLastCard: true })
+      if (hand.length === 1 && !cfg.allowActionCardFinish) continue;
+      const base = { type: "interject" as const, seat, card };
+      moves.push(base);
+      const remainder = hand.filter((c) => cardId(c) !== cardId(card));
+      if (
+        cfg.requireLastCardCall &&
+        remainder.length >= 1 &&
+        isLastGroup(remainder, cfg)
+      ) {
+        moves.push({ ...base, declareLastCard: true });
       }
     }
     if (moves.length > declareMoves.length) {
-      moves.push({ type: 'pass-interjection', seat })
+      moves.push({ type: "pass-interjection", seat });
     }
-    return moves
+    return moves;
   }
 
   // Off-turn: the only thing you may do is call your last card.
-  if (state.activeSeat !== seat) return declareMoves
-  const moves: LastCardMove[] = [...declareMoves]
+  if (state.activeSeat !== seat) return declareMoves;
+  const moves: LastCardMove[] = [...declareMoves];
 
   const isAction = (c: Card) =>
     isPickup(c, state.config) !== undefined ||
     isSkip(c, state.config) ||
     isReverse(c, state.config) ||
-    isSuitChange(c, state.config)
+    isSuitChange(c, state.config);
 
   const playable = hand.filter((c) => {
-    if (!canPlay(state, c)) return false
+    if (!canPlay(state, c)) return false;
     // You can't go out on an action card unless the variant allows it.
     if (hand.length === 1 && isAction(c) && !state.config.allowActionCardFinish) {
-      return false
+      return false;
     }
-    return true
-  })
+    return true;
+  });
   // Same-rank duplicates in hand (for pair/triplet/… plays).
   const sameRank = (lead: Card) =>
-    hand.filter((c) => c.rank === lead.rank && cardId(c) !== cardId(lead))
+    hand.filter((c) => c.rank === lead.rank && cardId(c) !== cardId(lead));
 
   /** Push play move(s) for a lead card, optionally bundling extra same-rank cards. */
   const pushPlay = (card: Card, extraCards: Card[]) => {
     // Does this play leave a "last card(s)" hand (a single card, or one same-rank
     // group)? If so, offer declaring alongside the play.
-    const playedIds = new Set([cardId(card), ...extraCards.map(cardId)])
-    const remainder = hand.filter((c) => !playedIds.has(cardId(c)))
+    const playedIds = new Set([cardId(card), ...extraCards.map(cardId)]);
+    const remainder = hand.filter((c) => !playedIds.has(cardId(c)));
     const willReachLast =
       state.config.requireLastCardCall &&
       remainder.length >= 1 &&
-      isLastGroup(remainder, state.config)
-    const base = { type: 'play' as const, seat, card, ...(extraCards.length ? { extraCards } : {}) }
+      isLastGroup(remainder, state.config);
+    const base = {
+      type: "play" as const,
+      seat,
+      card,
+      ...(extraCards.length ? { extraCards } : {}),
+    };
     if (isSuitChange(card, state.config)) {
-      for (const suit of ['c', 's', 'h', 'd'] as Suit[]) {
-        moves.push({ ...base, chosenSuit: suit })
-        if (willReachLast) moves.push({ ...base, chosenSuit: suit, declareLastCard: true })
+      for (const suit of ["c", "s", "h", "d"] as Suit[]) {
+        moves.push({ ...base, chosenSuit: suit });
+        if (willReachLast)
+          moves.push({ ...base, chosenSuit: suit, declareLastCard: true });
       }
     } else {
-      moves.push(base)
-      if (willReachLast) moves.push({ ...base, declareLastCard: true })
+      moves.push(base);
+      if (willReachLast) moves.push({ ...base, declareLastCard: true });
     }
-  }
+  };
 
-  const multiEmittedRanks = new Set<number>()
+  const multiEmittedRanks = new Set<number>();
   for (const card of playable) {
-    pushPlay(card, [])
+    pushPlay(card, []);
     // Multi-same-rank: offer playing ALL copies of this rank together (the
     // common UX). Emit the bundle options once per rank (not once per copy).
     if (state.config.allowMultiSameRank && !multiEmittedRanks.has(card.rank)) {
-      const extras = sameRank(card)
+      const extras = sameRank(card);
       if (extras.length) {
-        multiEmittedRanks.add(card.rank)
+        multiEmittedRanks.add(card.rank);
         // Don't offer a multi-play that would end on a forbidden action card
         // (the win check below uses the same allowActionCardFinish gate).
         const endsOnAction =
           hand.length === 1 + extras.length &&
           isAction(card) &&
-          !state.config.allowActionCardFinish
-        if (endsOnAction) continue
+          !state.config.allowActionCardFinish;
+        if (endsOnAction) continue;
         if (isSuitChange(card, state.config)) {
           // Wilds nominate the suit explicitly; a single bundle suffices.
-          pushPlay(card, extras)
+          pushPlay(card, extras);
         } else {
-          const group = [card, ...extras]
+          const group = [card, ...extras];
           // Play the whole same-rank group. The TOP (last-played) card sets the
           // active suit, so we offer one bundle per distinct top-suit. Two hard
           // constraints: (1) the LEAD (first card) must be a legal play — same
@@ -397,19 +414,19 @@ export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] 
           // ♦ demand); (2) to leave suit `s` on top there must be a suit-`s`
           // card to place LAST. If the only legal lead is also the only suit-`s`
           // card, that top-suit is infeasible (can't be both first and last).
-          const legalLeads = group.filter((c) => canPlay(state, c))
-          const seenTopSuit = new Set<string>()
+          const legalLeads = group.filter((c) => canPlay(state, c));
+          const seenTopSuit = new Set<string>();
           for (const top of group) {
-            if (seenTopSuit.has(top.suit)) continue
+            if (seenTopSuit.has(top.suit)) continue;
             // Need a legal lead distinct from the card we want on top (so `top`
             // can be played LAST). If none, this top-suit is infeasible.
-            const lead = legalLeads.find((c) => cardId(c) !== cardId(top))
-            if (!lead) continue
-            seenTopSuit.add(top.suit)
+            const lead = legalLeads.find((c) => cardId(c) !== cardId(top));
+            if (!lead) continue;
+            seenTopSuit.add(top.suit);
             const middle = group.filter(
               (c) => cardId(c) !== cardId(top) && cardId(c) !== cardId(lead),
-            )
-            pushPlay(lead, [...middle, top])
+            );
+            pushPlay(lead, [...middle, top]);
           }
         }
       }
@@ -417,9 +434,9 @@ export function getLegalMoves(state: LastCardState, seat: Seat): LastCardMove[] 
   }
 
   // Drawing is always available as the fallback action.
-  moves.push({ type: 'draw', seat })
+  moves.push({ type: "draw", seat });
 
-  return moves
+  return moves;
 }
 
 function clone(state: LastCardState): LastCardState {
@@ -431,20 +448,19 @@ function clone(state: LastCardState): LastCardState {
     drawPile: [...state.drawPile],
     discardPile: [...state.discardPile],
     cumulativeScores: { ...state.cumulativeScores },
-  }
+  };
 }
 
 /** Compute penalty scores for a finished round and fold into cumulative. */
 function tallyRound(state: LastCardState, winner: Seat): Record<Seat, number> {
-  const cumulative = { ...state.cumulativeScores }
+  const cumulative = { ...state.cumulativeScores };
   for (const p of state.players) {
-    if (p.seat === winner) continue
-    const hand = state.hands[p.seat] ?? []
+    if (p.seat === winner) continue;
+    const hand = state.hands[p.seat] ?? [];
     cumulative[p.seat] =
-      (cumulative[p.seat] ?? 0) +
-      hand.reduce((sum, c) => sum + cardPenaltyValue(c), 0)
+      (cumulative[p.seat] ?? 0) + hand.reduce((sum, c) => sum + cardPenaltyValue(c), 0);
   }
-  return cumulative
+  return cumulative;
 }
 
 /**
@@ -457,36 +473,36 @@ function finishRound(
   cfg: LastCardConfig,
   count: number,
 ): ReducerResult<LastCardState> {
-  next.roundWinner = winner
+  next.roundWinner = winner;
   // The winner's hand is empty; any obligation their final card created dies
   // with the round.
-  next.pendingPickup = 0
-  next.pendingPickupUnit = 0
-  next.pendingAction = null
-  next.awaitingCall = null
-  next.cumulativeScores = tallyRound(next, winner)
+  next.pendingPickup = 0;
+  next.pendingPickupUnit = 0;
+  next.pendingAction = null;
+  next.awaitingCall = null;
+  next.cumulativeScores = tallyRound(next, winner);
   if (next.round + 1 >= cfg.rounds) {
-    next.phase = 'finished'
-    next.activeSeat = null
-    return { ok: true, state: next }
+    next.phase = "finished";
+    next.activeSeat = null;
+    return { ok: true, state: next };
   }
   // Start the next round, rotating the dealer/first player.
-  const reseed = createRng(next.rng.seed ^ (next.round + 1))
-  const dealt = dealRound(next.players, cfg, reseed)
-  next.hands = dealt.hands
-  next.drawPile = dealt.drawPile
-  next.discardPile = dealt.discardPile
-  next.activeSuit = dealt.activeSuit
-  next.rng = dealt.rng
-  next.round += 1
-  next.pendingPickup = 0
-  next.pendingPickupUnit = 0
-  next.direction = 1
-  next.declaredLastCard = null
-  next.awaitingCall = null
-  next.roundWinner = null
-  next.activeSeat = next.players[next.round % count]!.seat
-  return { ok: true, state: next }
+  const reseed = createRng(next.rng.seed ^ (next.round + 1));
+  const dealt = dealRound(next.players, cfg, reseed);
+  next.hands = dealt.hands;
+  next.drawPile = dealt.drawPile;
+  next.discardPile = dealt.discardPile;
+  next.activeSuit = dealt.activeSuit;
+  next.rng = dealt.rng;
+  next.round += 1;
+  next.pendingPickup = 0;
+  next.pendingPickupUnit = 0;
+  next.direction = 1;
+  next.declaredLastCard = null;
+  next.awaitingCall = null;
+  next.roundWinner = null;
+  next.activeSeat = next.players[next.round % count]!.seat;
+  return { ok: true, state: next };
 }
 
 /** The reducer. */
@@ -494,52 +510,52 @@ export function reducer(
   state: LastCardState,
   move: LastCardMove,
 ): ReducerResult<LastCardState> {
-  if (state.phase === 'finished') {
-    return { ok: false, error: 'Round is over', state }
+  if (state.phase === "finished") {
+    return { ok: false, error: "Round is over", state };
   }
-  const cfg = state.config
-  const count = playerCount(state)
+  const cfg = state.config;
+  const count = playerCount(state);
 
   // While a skip/reverse chain is open, normal play is suspended — only chain
   // moves (and the always-allowed last-card call) may be made.
   if (
     state.pendingAction &&
-    move.type !== 'interject' &&
-    move.type !== 'pass-interjection' &&
-    move.type !== 'declare-last-card'
+    move.type !== "interject" &&
+    move.type !== "pass-interjection" &&
+    move.type !== "declare-last-card"
   ) {
-    return { ok: false, error: 'An action chain is pending', state }
+    return { ok: false, error: "An action chain is pending", state };
   }
 
   switch (move.type) {
-    case 'interject': {
-      const chain = state.pendingAction
-      if (!chain) return { ok: false, error: 'No pending action to interject', state }
+    case "interject": {
+      const chain = state.pendingAction;
+      if (!chain) return { ok: false, error: "No pending action to interject", state };
       if (!cfg.allowActionInterjection) {
-        return { ok: false, error: 'Interjection is not allowed', state }
+        return { ok: false, error: "Interjection is not allowed", state };
       }
       if (chain.passed.includes(move.seat)) {
-        return { ok: false, error: 'Already passed on this chain', state }
+        return { ok: false, error: "Already passed on this chain", state };
       }
-      const hand = state.hands[move.seat] ?? []
-      const idx = hand.findIndex((c) => cardId(c) === cardId(move.card))
-      if (idx === -1) return { ok: false, error: 'Card not in hand', state }
+      const hand = state.hands[move.seat] ?? [];
+      const idx = hand.findIndex((c) => cardId(c) === cardId(move.card));
+      if (idx === -1) return { ok: false, error: "Card not in hand", state };
       if (!matchesChain(move.card, chain, cfg)) {
-        return { ok: false, error: 'Card does not match the pending action', state }
+        return { ok: false, error: "Card does not match the pending action", state };
       }
       if (hand.length === 1 && !cfg.allowActionCardFinish) {
-        return { ok: false, error: 'Cannot go out on an action card', state }
+        return { ok: false, error: "Cannot go out on an action card", state };
       }
 
-      const next = clone(state)
-      applyMissedCall(next, move.seat)
+      const next = clone(state);
+      applyMissedCall(next, move.seat);
 
       next.hands[move.seat] = next.hands[move.seat]!.filter(
         (c) => cardId(c) !== cardId(move.card),
-      )
-      next.discardPile.push(move.card)
+      );
+      next.discardPile.push(move.card);
       // The interjected card is now the top card, so it sets the active suit.
-      next.activeSuit = move.card.suit
+      next.activeSuit = move.card.suit;
 
       // Extend the chain. Everyone who previously passed gets another say: the
       // chain has changed, so a seat that declined at count 1 may well want to
@@ -548,214 +564,209 @@ export function reducer(
         ...chain,
         count: chain.count + 1,
         passed: [move.seat],
-      }
-      next.pendingAction = extended
+      };
+      next.pendingAction = extended;
 
-      const remainingHand = next.hands[move.seat]!
+      const remainingHand = next.hands[move.seat]!;
       if (
         remainingHand.length >= 1 &&
         isLastGroup(remainingHand, cfg) &&
         cfg.requireLastCardCall
       ) {
         if (move.declareLastCard) {
-          next.declaredLastCard = move.seat
-          next.awaitingCall = null
+          next.declaredLastCard = move.seat;
+          next.awaitingCall = null;
         } else {
-          next.awaitingCall = move.seat
+          next.awaitingCall = move.seat;
         }
       }
 
       // Interjecting can empty a hand (when allowActionCardFinish is on).
       if (remainingHand.length === 0) {
-        next.pendingAction = null
-        return finishRound(next, move.seat, cfg, count)
+        next.pendingAction = null;
+        return finishRound(next, move.seat, cfg, count);
       }
 
-      settleChain(next)
-      return { ok: true, state: next }
+      settleChain(next);
+      return { ok: true, state: next };
     }
 
-    case 'pass-interjection': {
-      const chain = state.pendingAction
-      if (!chain) return { ok: false, error: 'No pending action to pass on', state }
-      const next = clone(state)
+    case "pass-interjection": {
+      const chain = state.pendingAction;
+      if (!chain) return { ok: false, error: "No pending action to pass on", state };
+      const next = clone(state);
       if (!next.pendingAction!.passed.includes(move.seat)) {
         next.pendingAction = {
           ...next.pendingAction!,
           passed: [...next.pendingAction!.passed, move.seat],
-        }
+        };
       }
-      settleChain(next)
-      return { ok: true, state: next }
+      settleChain(next);
+      return { ok: true, state: next };
     }
 
-    case 'draw': {
-      const next = clone(state)
+    case "draw": {
+      const next = clone(state);
 
       // If a pickup penalty is pending and the seat draws, they take it all.
-      const toDraw = next.pendingPickup > 0 ? next.pendingPickup : 1
-      next.pendingPickup = 0
-      next.pendingPickupUnit = 0
+      const toDraw = next.pendingPickup > 0 ? next.pendingPickup : 1;
+      next.pendingPickup = 0;
+      next.pendingPickupUnit = 0;
 
       for (let i = 0; i < toDraw; i++) {
         if (next.drawPile.length === 0) {
-          const refilled = refillDrawPile(next)
-          next.drawPile = refilled.drawPile
-          next.discardPile = refilled.discardPile
-          next.rng = refilled.rng
-          if (next.drawPile.length === 0) break // nothing left to draw
+          const refilled = refillDrawPile(next);
+          next.drawPile = refilled.drawPile;
+          next.discardPile = refilled.discardPile;
+          next.rng = refilled.rng;
+          if (next.drawPile.length === 0) break; // nothing left to draw
         }
-        const card = next.drawPile.pop()
-        if (card) next.hands[move.seat]!.push(card)
+        const card = next.drawPile.pop();
+        if (card) next.hands[move.seat]!.push(card);
       }
 
       // Resolve any pending missed-call penalty window closing on this action.
-      applyMissedCall(next, move.seat)
+      applyMissedCall(next, move.seat);
 
       // Drawing one card ends the turn (single-draw rule). A player who no
       // longer has a last-group after drawing loses their pending declaration.
       next.declaredLastCard =
-        next.declaredLastCard === move.seat ? null : next.declaredLastCard
-      next.activeSeat = nextSeat(move.seat, count, next.direction)
-      return { ok: true, state: next }
+        next.declaredLastCard === move.seat ? null : next.declaredLastCard;
+      next.activeSeat = nextSeat(move.seat, count, next.direction);
+      return { ok: true, state: next };
     }
 
-    case 'declare-last-card': {
-      const next = clone(state)
+    case "declare-last-card": {
+      const next = clone(state);
       // Valid for a single card OR one same-rank group (pair/triplet).
       if (isLastGroup(next.hands[move.seat] ?? [], cfg)) {
-        next.declaredLastCard = move.seat
-        if (next.awaitingCall === move.seat) next.awaitingCall = null
+        next.declaredLastCard = move.seat;
+        if (next.awaitingCall === move.seat) next.awaitingCall = null;
       }
-      return { ok: true, state: next }
+      return { ok: true, state: next };
     }
 
-    case 'pass': {
-      const next = clone(state)
-      applyMissedCall(next, move.seat)
-      next.activeSeat = nextSeat(move.seat, count, next.direction)
-      return { ok: true, state: next }
+    case "pass": {
+      const next = clone(state);
+      applyMissedCall(next, move.seat);
+      next.activeSeat = nextSeat(move.seat, count, next.direction);
+      return { ok: true, state: next };
     }
 
-    case 'play': {
-      const hand = state.hands[move.seat] ?? []
-      const idx = hand.findIndex((c) => cardId(c) === cardId(move.card))
-      if (idx === -1) return { ok: false, error: 'Card not in hand', state }
+    case "play": {
+      const hand = state.hands[move.seat] ?? [];
+      const idx = hand.findIndex((c) => cardId(c) === cardId(move.card));
+      if (idx === -1) return { ok: false, error: "Card not in hand", state };
       if (!canPlay(state, move.card)) {
-        return { ok: false, error: 'Card does not match', state }
+        return { ok: false, error: "Card does not match", state };
       }
       if (isSuitChange(move.card, cfg) && !move.chosenSuit) {
-        return { ok: false, error: 'Must nominate a suit', state }
+        return { ok: false, error: "Must nominate a suit", state };
       }
 
       // Validate any bundled same-rank cards (pair/triplet/…).
-      const extras = move.extraCards ?? []
+      const extras = move.extraCards ?? [];
       if (extras.length && !cfg.allowMultiSameRank) {
-        return { ok: false, error: 'Multi-card plays are not allowed', state }
+        return { ok: false, error: "Multi-card plays are not allowed", state };
       }
-      const extraIdxs: number[] = []
-      const usedIds = new Set<string>([cardId(move.card)])
+      const extraIdxs: number[] = [];
+      const usedIds = new Set<string>([cardId(move.card)]);
       for (const ex of extras) {
         if (ex.rank !== move.card.rank) {
-          return { ok: false, error: 'Extra cards must match the lead rank', state }
+          return { ok: false, error: "Extra cards must match the lead rank", state };
         }
         if (usedIds.has(cardId(ex))) {
-          return { ok: false, error: 'Duplicate card in play', state }
+          return { ok: false, error: "Duplicate card in play", state };
         }
-        const i = hand.findIndex((c) => cardId(c) === cardId(ex))
-        if (i === -1) return { ok: false, error: 'Extra card not in hand', state }
-        usedIds.add(cardId(ex))
-        extraIdxs.push(i)
+        const i = hand.findIndex((c) => cardId(c) === cardId(ex));
+        if (i === -1) return { ok: false, error: "Extra card not in hand", state };
+        usedIds.add(cardId(ex));
+        extraIdxs.push(i);
       }
 
       // All cards played this turn (lead first).
-      const played: Card[] = [move.card, ...extras]
+      const played: Card[] = [move.card, ...extras];
 
-      const next = clone(state)
+      const next = clone(state);
 
       // A new player's action closes the prior player's missed-call window.
-      applyMissedCall(next, move.seat)
+      applyMissedCall(next, move.seat);
 
       // Remove every played card from hand (by id) and discard them in order.
-      const playedIds = new Set(played.map((c) => cardId(c)))
+      const playedIds = new Set(played.map((c) => cardId(c)));
       next.hands[move.seat] = next.hands[move.seat]!.filter(
         (c) => !playedIds.has(cardId(c)),
-      )
-      for (const c of played) next.discardPile.push(c)
+      );
+      for (const c of played) next.discardPile.push(c);
 
       // Active suit: nominated suit for wilds; else the last played card's suit —
       // but a Joker is suitless, so it does NOT change the active suit (it just
       // carries over, and the next player still matches the prior demand).
-      const topPlayed = played[played.length - 1]!
+      const topPlayed = played[played.length - 1]!;
       if (isSuitChange(move.card, cfg) && move.chosenSuit) {
-        next.activeSuit = move.chosenSuit
+        next.activeSuit = move.chosenSuit;
       } else if (!isJoker(topPlayed)) {
-        next.activeSuit = topPlayed.suit
+        next.activeSuit = topPlayed.suit;
       } // else: joker on top → keep existing activeSuit
 
       // Pickup effects apply PER played card. Track the largest pickup unit
       // played so stacking stays ordered (a later 2 can't undercut a Joker).
       // Skip/reverse are handled by the chain machinery below.
       for (const c of played) {
-        const pk = isPickup(c, cfg)
+        const pk = isPickup(c, cfg);
         if (pk) {
-          next.pendingPickup += pk.amount
-          next.pendingPickupUnit = Math.max(next.pendingPickupUnit, pk.amount)
+          next.pendingPickup += pk.amount;
+          next.pendingPickupUnit = Math.max(next.pendingPickupUnit, pk.amount);
         }
       }
 
       // Last-card declaration handling. "Last card(s)" = a single card OR one
       // same-rank group (pair/triplet) that can be dumped together next turn.
-      const remainingHand = next.hands[move.seat]!
-      const remaining = remainingHand.length
+      const remainingHand = next.hands[move.seat]!;
+      const remaining = remainingHand.length;
       if (remaining >= 1 && isLastGroup(remainingHand, cfg) && cfg.requireLastCardCall) {
         if (move.declareLastCard) {
-          next.declaredLastCard = move.seat
-          next.awaitingCall = null
+          next.declaredLastCard = move.seat;
+          next.awaitingCall = null;
         } else {
-          next.awaitingCall = move.seat // penalty if not declared before next act
+          next.awaitingCall = move.seat; // penalty if not declared before next act
         }
       }
 
       // Win check.
-      if (remaining === 0) return finishRound(next, move.seat, cfg, count)
+      if (remaining === 0) return finishRound(next, move.seat, cfg, count);
 
       // Skip / reverse open an interjection chain rather than resolving at once,
       // so any other player holding a matching card can add to it. A hand can
       // only ever contain one KIND here (a same-rank multi-play), so the chain's
       // kind is unambiguous.
-      const skips = played.filter((c) => isSkip(c, cfg)).length
-      const reverses = played.filter((c) => isReverse(c, cfg)).length
+      const skips = played.filter((c) => isSkip(c, cfg)).length;
+      const reverses = played.filter((c) => isReverse(c, cfg)).length;
       if (skips > 0 || reverses > 0) {
         const chain: PendingActionChain = {
-          kind: skips > 0 ? 'skip' : 'reverse',
+          kind: skips > 0 ? "skip" : "reverse",
           origin: move.seat,
           count: skips > 0 ? skips : reverses,
           baseDirection: next.direction,
           passed: [move.seat], // the opener already committed their cards
           deadline: null,
-        }
-        next.pendingAction = chain
+        };
+        next.pendingAction = chain;
         // If nobody else can interject, resolve immediately — no dead window.
-        settleChain(next)
-        return { ok: true, state: next }
+        settleChain(next);
+        return { ok: true, state: next };
       }
 
-      next.activeSeat = nextSeat(move.seat, count, next.direction)
-      return { ok: true, state: next }
+      next.activeSeat = nextSeat(move.seat, count, next.direction);
+      return { ok: true, state: next };
     }
   }
 }
 
-function stepSeat(
-  seat: Seat,
-  count: number,
-  steps: number,
-  dir: 1 | -1,
-): Seat {
-  let s = seat
-  for (let i = 0; i < steps; i++) s = nextSeat(s, count, dir)
-  return s
+function stepSeat(seat: Seat, count: number, steps: number, dir: 1 | -1): Seat {
+  let s = seat;
+  for (let i = 0; i < steps; i++) s = nextSeat(s, count, dir);
+  return s;
 }
 
 /**
@@ -770,21 +781,21 @@ function stepSeat(
  * an unpayable remainder is simply forgiven rather than carried forward.
  */
 function applyMissedCall(state: LastCardState, actingSeat: Seat): void {
-  if (state.awaitingCall === null) return
-  if (state.awaitingCall === actingSeat) return // their own follow-up, no close yet
-  const offender = state.awaitingCall
+  if (state.awaitingCall === null) return;
+  if (state.awaitingCall === actingSeat) return; // their own follow-up, no close yet
+  const offender = state.awaitingCall;
   for (let i = 0; i < state.config.missedCallPenalty; i++) {
     if (state.drawPile.length === 0) {
-      const refilled = refillDrawPile(state)
-      state.drawPile = refilled.drawPile
-      state.discardPile = refilled.discardPile
-      state.rng = refilled.rng
-      if (state.drawPile.length === 0) break // stock fully exhausted — draw no more
+      const refilled = refillDrawPile(state);
+      state.drawPile = refilled.drawPile;
+      state.discardPile = refilled.discardPile;
+      state.rng = refilled.rng;
+      if (state.drawPile.length === 0) break; // stock fully exhausted — draw no more
     }
-    const card = state.drawPile.pop()
-    if (card) state.hands[offender]!.push(card)
+    const card = state.drawPile.pop();
+    if (card) state.hands[offender]!.push(card);
   }
-  state.awaitingCall = null
+  state.awaitingCall = null;
 }
 
-export { defaultLastCardConfig }
+export { defaultLastCardConfig };

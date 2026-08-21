@@ -11,65 +11,65 @@
  * noServer mode) to Nitro's HTTP server, routing only its own path so it
  * coexists with the crossws endpoint and Vite HMR.
  */
-import type { Server } from 'node:http'
-import { useRuntimeConfig } from '#imports'
+import type { Server } from "node:http";
+import { useRuntimeConfig } from "#imports";
 
 export default defineNitroPlugin(async (nitroApp) => {
-  if (import.meta.prerender) return
+  if (import.meta.prerender) return;
 
-  const rc = useRuntimeConfig()
-  if (!rc.conduit.enabled) return // default: Nitro WS only
+  const rc = useRuntimeConfig();
+  if (!rc.conduit.enabled) return; // default: Nitro WS only
 
-  const { createConduitServerCore } = await import('@conduit/server')
-  const { WebSocketServer } = await import('ws')
+  const { createConduitServerCore } = await import("@conduit/server");
+  const { WebSocketServer } = await import("ws");
 
-  const signalingPath = rc.public.conduit.path
+  const signalingPath = rc.public.conduit.path;
   const allowed = rc.conduit.allowedOrigins
     ? rc.conduit.allowedOrigins
-        .split(',')
+        .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
-    : undefined
+    : undefined;
 
   const core = createConduitServerCore({
     config: {
       path: signalingPath,
-      auth: { mode: rc.conduit.authMode as 'none' | 'key' },
+      auth: { mode: rc.conduit.authMode as "none" | "key" },
       key: rc.conduit.key,
       ...(allowed ? { allowedOrigins: allowed } : {}),
       relay: { enabled: true, maxMessageSize: rc.conduit.relayMaxMessageBytes },
     } as never,
-  })
-  core.start()
+  });
+  core.start();
 
-  const wss = new WebSocketServer({ noServer: true })
-  wss.on('connection', (socket, request) => {
-    const url = new URL(request.url ?? '', 'http://localhost')
-    const id = url.searchParams.get('id') ?? core.generateClientId()
-    const token = url.searchParams.get('token') ?? ''
-    const key = url.searchParams.get('key') ?? rc.conduit.key
-    const client = core.handleConnection(socket as never, id, token, key)
-    if (!client) return
-    socket.on('message', (data) => core.handleMessage(client, data as never))
-    socket.on('close', () => core.handleDisconnect(client))
-  })
+  const wss = new WebSocketServer({ noServer: true });
+  wss.on("connection", (socket, request) => {
+    const url = new URL(request.url ?? "", "http://localhost");
+    const id = url.searchParams.get("id") ?? core.generateClientId();
+    const token = url.searchParams.get("token") ?? "";
+    const key = url.searchParams.get("key") ?? rc.conduit.key;
+    const client = core.handleConnection(socket as never, id, token, key);
+    if (!client) return;
+    socket.on("message", (data) => core.handleMessage(client, data as never));
+    socket.on("close", () => core.handleDisconnect(client));
+  });
 
-  let attached = false
-  nitroApp.hooks.hook('listen' as never, (server: Server) => {
-    if (attached || typeof server?.on !== 'function') return
-    attached = true
-    server.on('upgrade', (request, socket, head) => {
-      const url = request.url ?? ''
+  let attached = false;
+  nitroApp.hooks.hook("listen" as never, (server: Server) => {
+    if (attached || typeof server?.on !== "function") return;
+    attached = true;
+    server.on("upgrade", (request, socket, head) => {
+      const url = request.url ?? "";
       // Only claim Conduit's own path; leave crossws (_ws) + HMR alone.
-      if (!url.startsWith(signalingPath)) return
+      if (!url.startsWith(signalingPath)) return;
       wss.handleUpgrade(request, socket as never, head, (ws) => {
-        wss.emit('connection', ws, request)
-      })
-    })
-  })
+        wss.emit("connection", ws, request);
+      });
+    });
+  });
 
-  nitroApp.hooks.hook('close', () => {
-    core.stop()
-    wss.close()
-  })
-})
+  nitroApp.hooks.hook("close", () => {
+    core.stop();
+    wss.close();
+  });
+});

@@ -11,15 +11,15 @@
  *
  * The raw sprite is imported at build time (?raw) — no network fetch.
  */
-import sprite from '~/assets/cards/deck.svg?raw'
+import sprite from "~/assets/cards/deck.svg?raw";
 
 const defsContent = computed(() => {
   // Grab everything inside the top-level <defs>…</defs>.
-  const match = sprite.match(/<defs[^>]*>([\s\S]*)<\/defs>/i)
-  if (match) return match[1] ?? ''
+  const match = sprite.match(/<defs[^>]*>([\s\S]*)<\/defs>/i);
+  if (match) return match[1] ?? "";
   // Fallback: at least the symbols.
-  return (sprite.match(/<symbol[\s\S]*?<\/symbol>/g) ?? []).join('\n')
-})
+  return (sprite.match(/<symbol[\s\S]*?<\/symbol>/g) ?? []).join("\n");
+});
 </script>
 
 <template>

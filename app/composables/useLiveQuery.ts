@@ -7,25 +7,22 @@
  * bless — subscribe to the liveQuery Observable, mirror it into a ref, and
  * unsubscribe on unmount. Client-only (IndexedDB is unavailable during SSR).
  */
-import { liveQuery } from 'dexie'
+import { liveQuery } from "dexie";
 
-export function useLiveQuery<T>(
-  querier: () => T | Promise<T>,
-  initial: T,
-): Ref<T> {
-  const result = ref(initial) as Ref<T>
+export function useLiveQuery<T>(querier: () => T | Promise<T>, initial: T): Ref<T> {
+  const result = ref(initial) as Ref<T>;
 
   if (import.meta.client) {
     const subscription = liveQuery(querier).subscribe({
       next: (value) => {
-        result.value = value
+        result.value = value;
       },
       error: (err) => {
-        console.error('[useLiveQuery]', err)
+        console.error("[useLiveQuery]", err);
       },
-    })
-    onScopeDispose(() => subscription.unsubscribe())
+    });
+    onScopeDispose(() => subscription.unsubscribe());
   }
 
-  return result
+  return result;
 }

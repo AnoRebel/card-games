@@ -4,108 +4,127 @@
  * Emits `start` with the chosen config. Used from the home cards and the play
  * route so there's no dedicated setup page.
  */
-import { getGame } from '@card-games/engine-core'
+import { getGame } from "@card-games/engine-core";
 
-const props = defineProps<{ gameId: string }>()
-const open = defineModel<boolean>('open', { default: false })
-type SetupConfig = Record<string, unknown> | null
+const props = defineProps<{ gameId: string }>();
+const open = defineModel<boolean>("open", { default: false });
+type SetupConfig = Record<string, unknown> | null;
 const emit = defineEmits<{
-  startOffline: [{ totalPlayers: number; humanCount: number; config?: SetupConfig }]
+  startOffline: [{ totalPlayers: number; humanCount: number; config?: SetupConfig }];
   startOnline: [
     {
-      totalPlayers: number
-      visibility: 'public' | 'locked'
-      customId?: string
-      config?: SetupConfig
-      turnTimeoutMs?: number
-      persist?: boolean
-      maxSpectators?: number
+      totalPlayers: number;
+      visibility: "public" | "locked";
+      customId?: string;
+      config?: SetupConfig;
+      turnTimeoutMs?: number;
+      persist?: boolean;
+      maxSpectators?: number;
     },
-  ]
-}>()
+  ];
+}>();
 
-const { $ts } = useI18n()
-const { name } = usePlayerIdentity()
+const { $ts } = useI18n();
+const { name } = usePlayerIdentity();
 
-const meta = computed(() => getGame(props.gameId)?.meta ?? null)
-const counts = computed(() => meta.value?.supportedPlayerCounts ?? [2, 3, 4])
-const totalPlayers = ref(2)
-const humanCount = ref(1)
-const visibility = ref<'public' | 'locked'>('public')
-const mode = ref<'offline' | 'online'>('offline')
-const customId = ref('')
-const showOptions = ref(false)
+const meta = computed(() => getGame(props.gameId)?.meta ?? null);
+const counts = computed(() => meta.value?.supportedPlayerCounts ?? [2, 3, 4]);
+const totalPlayers = ref(2);
+const humanCount = ref(1);
+const visibility = ref<"public" | "locked">("public");
+const mode = ref<"offline" | "online">("offline");
+const customId = ref("");
+const showOptions = ref(false);
 // Online per-turn time limit in seconds (0 = off).
-const turnTimeoutSec = ref(0)
+const turnTimeoutSec = ref(0);
 // Keep the room alive while empty (off = reaped after a short grace).
-const persist = ref(false)
+const persist = ref(false);
 // Cap on concurrent spectators. -1 = none allowed, 0 = unlimited, n>0 = cap.
-const maxSpectators = ref(0)
+const maxSpectators = ref(0);
 
 // --- Rule-variant options (per game). These map straight onto the engine
 // config; unset knobs fall back to the game's defaultConfig(). ------------
-const difficulty = ref<'easy' | 'normal' | 'hard'>('normal')
+const difficulty = ref<"easy" | "normal" | "hard">("normal");
 // Last Card
-const lcRounds = ref(1)
-const lcHandSize = ref(7)
-const lcMultiRank = ref(true)
-const lcStacking = ref(true)
-const lcCallRequired = ref(true)
+const lcRounds = ref(1);
+const lcHandSize = ref(7);
+const lcMultiRank = ref(true);
+const lcStacking = ref(true);
+const lcCallRequired = ref(true);
 // Albastini
-const abTeamMode = ref<'individual' | 'teams-of-two' | 'teams-of-three'>('individual')
-const abHands = ref(1)
-const abBidding = ref(true)
+const abTeamMode = ref<"individual" | "teams-of-two" | "teams-of-three">("individual");
+const abHands = ref(1);
+const abBidding = ref(true);
 
 // Team modes only make sense at certain player counts.
-type TeamModeItem = { label: string; value: 'individual' | 'teams-of-two' | 'teams-of-three' }
+type TeamModeItem = {
+  label: string;
+  value: "individual" | "teams-of-two" | "teams-of-three";
+};
 const teamModeItems = computed<TeamModeItem[]>(() => {
-  const items: TeamModeItem[] = [{ label: $ts('setup.teamIndividual'), value: 'individual' }]
+  const items: TeamModeItem[] = [
+    { label: $ts("setup.teamIndividual"), value: "individual" },
+  ];
   if (totalPlayers.value % 2 === 0 && totalPlayers.value >= 4)
-    items.push({ label: $ts('setup.teamsOfTwo'), value: 'teams-of-two' })
+    items.push({ label: $ts("setup.teamsOfTwo"), value: "teams-of-two" });
   if (totalPlayers.value === 6)
-    items.push({ label: $ts('setup.teamsOfThree'), value: 'teams-of-three' })
-  return items
-})
+    items.push({ label: $ts("setup.teamsOfThree"), value: "teams-of-three" });
+  return items;
+});
 watch(teamModeItems, (items) => {
-  if (!items.some((i) => i.value === abTeamMode.value)) abTeamMode.value = 'individual'
-})
+  if (!items.some((i) => i.value === abTeamMode.value)) abTeamMode.value = "individual";
+});
 
 /** Build the engine config object from the chosen options (or null for defaults). */
 function buildConfig(): SetupConfig {
-  if (props.gameId === 'last-card') {
+  if (props.gameId === "last-card") {
     return {
       rounds: lcRounds.value,
       handSize: lcHandSize.value,
       allowMultiSameRank: lcMultiRank.value,
       allowPickupStacking: lcStacking.value,
       requireLastCardCall: lcCallRequired.value,
-    }
+    };
   }
-  if (props.gameId === 'albastini') {
+  if (props.gameId === "albastini") {
     return {
       teamMode: abTeamMode.value,
       hands: abHands.value,
       enableBidding: abBidding.value,
-    }
+    };
   }
-  return null
+  return null;
 }
 
-watch(meta, (m) => { if (m) totalPlayers.value = m.supportedPlayerCounts[0] ?? 2 }, { immediate: true })
-watch(totalPlayers, (n) => { if (humanCount.value > n) humanCount.value = n })
+watch(
+  meta,
+  (m) => {
+    if (m) totalPlayers.value = m.supportedPlayerCounts[0] ?? 2;
+  },
+  { immediate: true },
+);
+watch(totalPlayers, (n) => {
+  if (humanCount.value > n) humanCount.value = n;
+});
 
-const title = computed(() => meta.value?.name ?? 'Game')
-const modalUi = useThemedModalUi()
+const title = computed(() => meta.value?.name ?? "Game");
+const modalUi = useThemedModalUi();
 
 function start() {
-  open.value = false
-  const config = buildConfig()
+  open.value = false;
+  const config = buildConfig();
   // Difficulty rides on the config for offline bot policy (ignored online).
-  const withDifficulty = config ? { ...config, difficulty: difficulty.value } : { difficulty: difficulty.value }
-  if (mode.value === 'offline') {
-    emit('startOffline', { totalPlayers: totalPlayers.value, humanCount: humanCount.value, config: withDifficulty })
+  const withDifficulty = config
+    ? { ...config, difficulty: difficulty.value }
+    : { difficulty: difficulty.value };
+  if (mode.value === "offline") {
+    emit("startOffline", {
+      totalPlayers: totalPlayers.value,
+      humanCount: humanCount.value,
+      config: withDifficulty,
+    });
   } else {
-    emit('startOnline', {
+    emit("startOnline", {
       totalPlayers: totalPlayers.value,
       visibility: visibility.value,
       customId: customId.value.trim() || undefined,
@@ -114,7 +133,7 @@ function start() {
       persist: persist.value || undefined,
       // 0 = unlimited (omit); -1 = none; n>0 = cap.
       maxSpectators: maxSpectators.value !== 0 ? maxSpectators.value : undefined,
-    })
+    });
   }
 }
 </script>
@@ -136,7 +155,7 @@ function start() {
             color="primary"
             @click="mode = 'offline'"
           >
-            {{ $ts('lobby.playOffline') }}
+            {{ $ts("lobby.playOffline") }}
           </UButton>
           <UButton
             class="flex-1 justify-center"
@@ -145,7 +164,7 @@ function start() {
             color="primary"
             @click="mode = 'online'"
           >
-            {{ $ts('lobby.playOnline') }}
+            {{ $ts("lobby.playOnline") }}
           </UButton>
         </UFieldGroup>
 
@@ -161,7 +180,12 @@ function start() {
             <USelect
               v-model="humanCount"
               size="sm"
-              :items="Array.from({ length: totalPlayers }, (_, i) => ({ label: `${i + 1}`, value: i + 1 }))"
+              :items="
+                Array.from({ length: totalPlayers }, (_, i) => ({
+                  label: `${i + 1}`,
+                  value: i + 1,
+                }))
+              "
             />
           </UFormField>
           <UFormField v-else :label="$ts('lobby.spectators')" size="sm">
@@ -201,13 +225,24 @@ function start() {
           >
             <span class="flex items-center gap-1.5">
               <UIcon name="i-lucide-sliders-horizontal" />
-              {{ $ts('setup.gameOptions') }}
+              {{ $ts("setup.gameOptions") }}
             </span>
-            <UIcon :name="showOptions ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" />
+            <UIcon
+              :name="showOptions ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+            />
           </button>
-          <div v-if="showOptions" class="px-3 pb-3 space-y-3 border-t" :style="{ borderColor: 'var(--cg-border)' }">
+          <div
+            v-if="showOptions"
+            class="px-3 pb-3 space-y-3 border-t"
+            :style="{ borderColor: 'var(--cg-border)' }"
+          >
             <!-- Difficulty (offline only) -->
-            <UFormField v-if="mode === 'offline'" :label="$ts('setup.difficulty')" size="sm" class="pt-3">
+            <UFormField
+              v-if="mode === 'offline'"
+              :label="$ts('setup.difficulty')"
+              size="sm"
+              class="pt-3"
+            >
               <USelect
                 v-model="difficulty"
                 size="sm"
@@ -250,9 +285,9 @@ function start() {
               <label class="flex items-start gap-2 cursor-pointer">
                 <USwitch v-model="persist" size="sm" class="mt-0.5" />
                 <span class="text-sm">
-                  {{ $ts('setup.persistRoom') }}
+                  {{ $ts("setup.persistRoom") }}
                   <span class="block text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-                    {{ $ts('setup.persistRoomHint') }}
+                    {{ $ts("setup.persistRoomHint") }}
                   </span>
                 </span>
               </label>
@@ -281,9 +316,21 @@ function start() {
                 </UFormField>
               </div>
               <div class="space-y-2">
-                <USwitch v-model="lcMultiRank" :label="$ts('setup.multiRank')" size="sm" />
-                <USwitch v-model="lcStacking" :label="$ts('setup.pickupStacking')" size="sm" />
-                <USwitch v-model="lcCallRequired" :label="$ts('setup.callRequired')" size="sm" />
+                <USwitch
+                  v-model="lcMultiRank"
+                  :label="$ts('setup.multiRank')"
+                  size="sm"
+                />
+                <USwitch
+                  v-model="lcStacking"
+                  :label="$ts('setup.pickupStacking')"
+                  size="sm"
+                />
+                <USwitch
+                  v-model="lcCallRequired"
+                  :label="$ts('setup.callRequired')"
+                  size="sm"
+                />
               </div>
             </template>
 
@@ -314,10 +361,10 @@ function start() {
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
         <UButton variant="ghost" color="neutral" @click="open = false">
-          {{ $ts('game.cancel') }}
+          {{ $ts("game.cancel") }}
         </UButton>
         <UButton color="primary" icon="i-lucide-play" @click="start">
-          {{ $ts('common.start') }}
+          {{ $ts("common.start") }}
         </UButton>
       </div>
     </template>

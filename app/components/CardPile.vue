@@ -4,32 +4,32 @@
  * the top card). Slight offsets give a tactile "stack" look without per-card DOM
  * for every card (we render at most a few backing layers).
  */
-import type { Card } from '@card-games/engine-core'
+import type { Card } from "@card-games/engine-core";
 
 const props = withDefaults(
   defineProps<{
     /** Top (visible) card; omit for a face-down draw pile. */
-    top?: Card | null
-    faceDown?: boolean
-    count?: number
-    width?: number
-    label?: string
-    selectable?: boolean
+    top?: Card | null;
+    faceDown?: boolean;
+    count?: number;
+    width?: number;
+    label?: string;
+    selectable?: boolean;
   }>(),
   {
     top: null,
     faceDown: false,
     count: 0,
     width: 92,
-    label: '',
+    label: "",
     selectable: false,
   },
-)
+);
 
-const emit = defineEmits<{ activate: [] }>()
+const emit = defineEmits<{ activate: [] }>();
 
 // Up to 3 backing layers for depth, regardless of true count.
-const layers = computed(() => Math.min(Math.max(props.count - 1, 0), 3))
+const layers = computed(() => Math.min(Math.max(props.count - 1, 0), 3));
 </script>
 
 <template>

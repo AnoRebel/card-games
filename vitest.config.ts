@@ -1,24 +1,21 @@
-import { fileURLToPath } from 'node:url'
-import { defineConfig } from 'vitest/config'
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "vitest/config";
 
-const r = (p: string) => fileURLToPath(new URL(p, import.meta.url))
+const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@card-games/engine-core': r('./packages/engine-core/src/index.ts'),
-      '@card-games/game-last-card': r('./packages/game-last-card/src/index.ts'),
-      '@card-games/game-albastini': r('./packages/game-albastini/src/index.ts'),
-      '~/': r('./app/'),
-      '@/': r('./app/'),
+      "@card-games/engine-core": r("./packages/engine-core/src/index.ts"),
+      "@card-games/game-last-card": r("./packages/game-last-card/src/index.ts"),
+      "@card-games/game-albastini": r("./packages/game-albastini/src/index.ts"),
+      "~/": r("./app/"),
+      "@/": r("./app/"),
     },
   },
   test: {
-    environment: 'node',
-    include: [
-      'packages/**/test/**/*.{test,spec}.ts',
-      'test/**/*.{test,spec}.ts',
-    ],
+    environment: "node",
+    include: ["packages/**/test/**/*.{test,spec}.ts", "test/**/*.{test,spec}.ts"],
     globals: true,
   },
-})
+});

@@ -12,18 +12,18 @@ export const dealMotion = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: 'spring', stiffness: 320, damping: 28 },
+    transition: { type: "spring", stiffness: 320, damping: 28 },
   },
-}
+};
 
 export const playMotion = {
   initial: { opacity: 0, scale: 0.8 },
   enter: {
     opacity: 1,
     scale: 1,
-    transition: { type: 'spring', stiffness: 300, damping: 24 },
+    transition: { type: "spring", stiffness: 300, damping: 24 },
   },
-}
+};
 
 export const popMotion = {
   initial: { opacity: 0, scale: 0.6 },
@@ -32,7 +32,7 @@ export const popMotion = {
     scale: 1,
     transition: { duration: 180 },
   },
-}
+};
 
 /** Staggered enter for a freshly-dealt hand. */
 export function dealStagger(index: number) {
@@ -43,11 +43,11 @@ export function dealStagger(index: number) {
       y: 0,
       scale: 1,
       transition: {
-        type: 'spring',
+        type: "spring",
         stiffness: 300,
         damping: 26,
         delay: index * 45,
       },
     },
-  }
+  };
 }

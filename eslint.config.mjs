@@ -1,6 +1,6 @@
 // @ts-check
-import withNuxt from './.nuxt/eslint.config.mjs'
-import prettier from 'eslint-config-prettier'
+import withNuxt from "./.nuxt/eslint.config.mjs";
+import prettier from "eslint-config-prettier";
 
 /**
  * Determinism guard for the pure engine + game-rule packages.
@@ -12,37 +12,35 @@ import prettier from 'eslint-config-prettier'
  */
 const NON_DETERMINISTIC = [
   {
-    selector:
-      "CallExpression[callee.object.name='Math'][callee.property.name='random']",
+    selector: "CallExpression[callee.object.name='Math'][callee.property.name='random']",
     message:
-      'Engine/game code must be deterministic: use the seeded PRNG (rng) instead of Math.random.',
+      "Engine/game code must be deterministic: use the seeded PRNG (rng) instead of Math.random.",
   },
   {
-    selector:
-      "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+    selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
     message:
-      'Engine/game code must be deterministic: inject timestamps instead of calling Date.now().',
+      "Engine/game code must be deterministic: inject timestamps instead of calling Date.now().",
   },
   {
     selector: "NewExpression[callee.name='Date'][arguments.length=0]",
     message:
-      'Engine/game code must be deterministic: inject timestamps instead of `new Date()`.',
+      "Engine/game code must be deterministic: inject timestamps instead of `new Date()`.",
   },
   {
     selector:
       "CallExpression[callee.object.name='performance'][callee.property.name='now']",
     message:
-      'Engine/game code must be deterministic: do not read wall-clock time in engine logic.',
+      "Engine/game code must be deterministic: do not read wall-clock time in engine logic.",
   },
-]
+];
 
 export default withNuxt(
   {
-    files: ['packages/engine-core/**/*.ts', 'packages/game-*/**/*.ts'],
+    files: ["packages/engine-core/**/*.ts", "packages/game-*/**/*.ts"],
     rules: {
-      'no-restricted-syntax': ['error', ...NON_DETERMINISTIC],
+      "no-restricted-syntax": ["error", ...NON_DETERMINISTIC],
     },
   },
   // Must come last: disables any ESLint rules that conflict with Prettier.
   prettier,
-)
+);

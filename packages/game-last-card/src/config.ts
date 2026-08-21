@@ -11,17 +11,17 @@
  * entry targets them.
  */
 
-import type { Card, Rank } from '@card-games/engine-core'
-import { isJoker } from '@card-games/engine-core'
+import type { Card, Rank } from "@card-games/engine-core";
+import { isJoker } from "@card-games/engine-core";
 
 export interface LastCardConfig {
   /** Cards dealt to each player at the start of a round. */
-  handSize: number
+  handSize: number;
   /**
    * If the turned starting card is an action card, re-draw a plain card to
    * start instead of applying its effect.
    */
-  redrawActionStart: boolean
+  redrawActionStart: boolean;
 
   /**
    * Ranks that force the next player to pick up, with the pickup amount.
@@ -29,14 +29,14 @@ export interface LastCardConfig {
    * stack on any other when `allowPickupStacking` is on (e.g. a Joker's +5 on a
    * 2's +2 → +7), since the pending penalty just accumulates.
    */
-  pickupCards: { rank: Rank | 0; amount: number }[]
+  pickupCards: { rank: Rank | 0; amount: number }[];
   /** Allow stacking pickup cards to pass on an accumulating penalty. */
-  allowPickupStacking: boolean
+  allowPickupStacking: boolean;
 
   /** Ranks that skip the next player's turn. */
-  skipCards: Rank[]
+  skipCards: Rank[];
   /** Ranks that reverse play direction. */
-  reverseCards: Rank[]
+  reverseCards: Rank[];
 
   /**
    * Allow ANY player holding a matching skip/reverse card to interject it onto a
@@ -49,36 +49,36 @@ export interface LastCardConfig {
    * Skip/reverse chains are SEPARATE from the pickup chain: neither may be
    * played onto a pending pickup, and pickups may not be played onto them.
    */
-  allowActionInterjection: boolean
+  allowActionInterjection: boolean;
   /**
    * Milliseconds the interjection window stays open before the chain resolves
    * automatically. 0 = no timer: the window stays open until every eligible
    * player has passed (host preference).
    */
-  interjectionWindowMs: number
+  interjectionWindowMs: number;
   /** Ranks that let the player nominate the next suit (wild). */
-  suitChangeCards: Rank[]
+  suitChangeCards: Rank[];
 
   /** Require declaring "Last Card" when reducing to one card. */
-  requireLastCardCall: boolean
+  requireLastCardCall: boolean;
   /** Penalty cards drawn for a missed "Last Card" call. */
-  missedCallPenalty: number
+  missedCallPenalty: number;
   /**
    * Whether an action card (pickup/skip/reverse/suit-change) may be the final
    * card played to win. The common rule is `false`: you must go out on a plain
    * card, so an action card cannot be your last.
    */
-  allowActionCardFinish: boolean
+  allowActionCardFinish: boolean;
 
   /**
    * Allow playing several cards of the SAME RANK in one turn (pairs, triplets,
    * quadruplets…). The first (lead) card must be a legal play; the rest stack on
    * top. Action effects (pickup/skip) apply per card played.
    */
-  allowMultiSameRank: boolean
+  allowMultiSameRank: boolean;
 
   /** Number of rounds; 1 = single round, >1 = cumulative lowest score wins. */
-  rounds: number
+  rounds: number;
 }
 
 export function defaultLastCardConfig(): LastCardConfig {
@@ -101,14 +101,14 @@ export function defaultLastCardConfig(): LastCardConfig {
     allowActionCardFinish: false,
     allowMultiSameRank: true,
     rounds: 1,
-  }
+  };
 }
 
 /** Penalty point value of a card left in hand at round end. */
 export function cardPenaltyValue(card: Card): number {
-  if (isJoker(card)) return 15 // Joker — the heaviest card to be caught holding
-  const rank = card.rank
-  if (rank === 1) return 1 // Ace
-  if (rank >= 11) return 10 // J/Q/K
-  return rank // pip value
+  if (isJoker(card)) return 15; // Joker — the heaviest card to be caught holding
+  const rank = card.rank;
+  if (rank === 1) return 1; // Ace
+  if (rank >= 11) return 10; // J/Q/K
+  return rank; // pip value
 }

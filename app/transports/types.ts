@@ -12,23 +12,23 @@ import type {
   Player,
   ScoreResult,
   Seat,
-} from '@card-games/engine-core'
+} from "@card-games/engine-core";
 
 export interface ChatMessage {
-  id: string
-  senderId: string
-  senderName: string
-  body: string
+  id: string;
+  senderId: string;
+  senderName: string;
+  body: string;
   /** ISO timestamp (date-fns formatted at render). */
-  at: string
+  at: string;
 }
 
 export interface PresenceInfo {
-  playerId: string
-  name: string
-  seat: Seat | null
-  connected: boolean
-  spectator: boolean
+  playerId: string;
+  name: string;
+  seat: Seat | null;
+  connected: boolean;
+  spectator: boolean;
 }
 
 /** A redacted view of state plus derived helpers the UI needs. */
@@ -37,36 +37,36 @@ export interface TransportView<S extends BaseGameState, M extends BaseMove> {
    * True once real game state exists. Online transports start `false` (lobby /
    * before the host starts); the table must not render game state until ready.
    */
-  ready: boolean
+  ready: boolean;
   /** State as this viewer is entitled to see it (hands redacted). */
-  state: S
+  state: S;
   /** Legal moves for the local viewer's seat (empty for spectators). */
-  legalMoves: M[]
+  legalMoves: M[];
   /** Final scores, when terminal. */
-  scores: ScoreResult | null
+  scores: ScoreResult | null;
   /** Whose turn it is from the viewer's perspective. */
-  isMyTurn: boolean
+  isMyTurn: boolean;
 }
 
 export interface GameTransport<
   S extends BaseGameState = BaseGameState,
   M extends BaseMove = BaseMove,
 > {
-  readonly mode: 'local' | 'online'
+  readonly mode: "local" | "online";
   /** The seat this client controls (null = spectator). */
-  readonly viewerSeat: Seat | null
+  readonly viewerSeat: Seat | null;
 
   /** Current redacted view (reactive source lives in the implementation). */
-  getView(): TransportView<S, M>
+  getView(): TransportView<S, M>;
 
   /** Submit a move; resolves with whether it was accepted. */
-  submitMove(move: M): Promise<{ ok: boolean; error?: string }>
+  submitMove(move: M): Promise<{ ok: boolean; error?: string }>;
 
   /** Subscribe to view changes; returns an unsubscribe fn. */
-  onChange(cb: (view: TransportView<S, M>) => void): () => void
+  onChange(cb: (view: TransportView<S, M>) => void): () => void;
 
   /** Presence of all participants. */
-  getPresence(): PresenceInfo[]
+  getPresence(): PresenceInfo[];
 
   /**
    * Chat: send + subscribe. `sender` overrides the attributed identity — used by
@@ -77,13 +77,13 @@ export interface GameTransport<
   sendChat(
     body: string,
     sender?: { id: string; name: string },
-  ): Promise<{ ok: boolean; error?: string }>
-  onChat(cb: (messages: ChatMessage[]) => void): () => void
-  getChat(): ChatMessage[]
+  ): Promise<{ ok: boolean; error?: string }>;
+  onChat(cb: (messages: ChatMessage[]) => void): () => void;
+  getChat(): ChatMessage[];
 
   /** Players at the table. */
-  getPlayers(): Player[]
+  getPlayers(): Player[];
 
   /** Tear down (unsubscribe, close connections). */
-  destroy(): void
+  destroy(): void;
 }

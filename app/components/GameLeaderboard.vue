@@ -2,11 +2,11 @@
 /**
  * Per-game leaderboard. Themed surface, responsive, collapsible on the table.
  */
-const props = defineProps<{ gameId: string }>()
-const { rows } = useLeaderboard(() => props.gameId)
-const open = ref(true)
+const props = defineProps<{ gameId: string }>();
+const { rows } = useLeaderboard(() => props.gameId);
+const open = ref(true);
 
-const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
+const medal = (i: number) => ["🥇", "🥈", "🥉"][i] ?? `${i + 1}`;
 </script>
 
 <template>
@@ -18,15 +18,26 @@ const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
       @click="open = !open"
     >
       <span class="flex items-center gap-1.5">
-        <UIcon name="i-lucide-trophy" /> {{ $ts('leaderboard.title') }}
+        <UIcon name="i-lucide-trophy" /> {{ $ts("leaderboard.title") }}
       </span>
-      <UIcon name="i-lucide-chevron-down" class="transition-transform" :class="open ? 'rotate-180' : ''" />
+      <UIcon
+        name="i-lucide-chevron-down"
+        class="transition-transform"
+        :class="open ? 'rotate-180' : ''"
+      />
     </button>
 
-    <div class="grid transition-[grid-template-rows] duration-300" :style="{ gridTemplateRows: open ? '1fr' : '0fr' }">
+    <div
+      class="grid transition-[grid-template-rows] duration-300"
+      :style="{ gridTemplateRows: open ? '1fr' : '0fr' }"
+    >
       <div class="overflow-hidden">
-        <p v-if="!rows.length" class="px-3 pb-3 text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $ts('leaderboard.empty') }}
+        <p
+          v-if="!rows.length"
+          class="px-3 pb-3 text-sm"
+          :style="{ color: 'var(--cg-text-muted)' }"
+        >
+          {{ $ts("leaderboard.empty") }}
         </p>
         <ol v-else class="px-3 pb-2">
           <li
@@ -37,9 +48,12 @@ const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
           >
             <span class="w-6 text-center">{{ medal(i) }}</span>
             <span class="flex-1 truncate font-medium">{{ row.playerName }}</span>
-            <span class="text-sm whitespace-nowrap" :style="{ color: 'var(--cg-text-muted)' }">
-              {{ $ts('leaderboard.wins', { count: row.wins }) }} ·
-              {{ $ts('leaderboard.played', { count: row.played }) }}
+            <span
+              class="text-sm whitespace-nowrap"
+              :style="{ color: 'var(--cg-text-muted)' }"
+            >
+              {{ $ts("leaderboard.wins", { count: row.wins }) }} ·
+              {{ $ts("leaderboard.played", { count: row.played }) }}
             </span>
           </li>
         </ol>

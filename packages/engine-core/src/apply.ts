@@ -6,17 +6,11 @@
  * replay from an initial state + move log.
  */
 
-import type {
-  BaseGameState,
-  BaseMove,
-  GameModule,
-  ReducerResult,
-  Seat,
-} from './types'
+import type { BaseGameState, BaseMove, GameModule, ReducerResult, Seat } from "./types";
 
 /** Deep structural equality for plain serializable game state/moves. */
 function sameMove(a: BaseMove, b: BaseMove): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 /**
@@ -28,33 +22,34 @@ function sameMove(a: BaseMove, b: BaseMove): boolean {
  * On rejection, returns `{ ok: false, state }` with state unchanged.
  * On success, returns the reduced state with `version` incremented.
  */
-export function applyMove<
-  S extends BaseGameState,
-  M extends BaseMove,
-  C,
->(game: GameModule<S, M, C>, state: S, move: M): ReducerResult<S> {
+export function applyMove<S extends BaseGameState, M extends BaseMove, C>(
+  game: GameModule<S, M, C>,
+  state: S,
+  move: M,
+): ReducerResult<S> {
   if (game.isTerminal(state)) {
-    return { ok: false, error: 'Game is already over', state }
+    return { ok: false, error: "Game is already over", state };
   }
   // `getLegalMoves` is the single source of truth for what a seat may do. It
   // already returns [] for a non-active seat EXCEPT for intentional off-turn
   // moves (e.g. an out-of-turn "Last Card" declaration). So the legal-set check
   // below subsumes the turn check — a seat with no legal move is rejected here.
-  const legal = game.getLegalMoves(state, move.seat)
+  const legal = game.getLegalMoves(state, move.seat);
   if (!legal.some((m) => sameMove(m, move))) {
     return {
       ok: false,
-      error: state.activeSeat !== null && move.seat !== state.activeSeat
-        ? 'Not your turn'
-        : 'Illegal move',
+      error:
+        state.activeSeat !== null && move.seat !== state.activeSeat
+          ? "Not your turn"
+          : "Illegal move",
       state,
-    }
+    };
   }
 
-  const result = game.reducer(state, move)
-  if (!result.ok) return result
+  const result = game.reducer(state, move);
+  if (!result.ok) return result;
 
-  return { ok: true, state: { ...result.state, version: state.version + 1 } }
+  return { ok: true, state: { ...result.state, version: state.version + 1 } };
 }
 
 /**
@@ -67,15 +62,15 @@ export function replay<S extends BaseGameState, M extends BaseMove, C>(
   initial: S,
   moves: readonly M[],
 ): S {
-  let state = initial
+  let state = initial;
   for (const [i, move] of moves.entries()) {
-    const result = applyMove(game, state, move)
+    const result = applyMove(game, state, move);
     if (!result.ok) {
-      throw new Error(`Replay failed at move ${i}: ${result.error}`)
+      throw new Error(`Replay failed at move ${i}: ${result.error}`);
     }
-    state = result.state
+    state = result.state;
   }
-  return state
+  return state;
 }
 
 /** Convenience: are there any legal moves for `seat` right now? */
@@ -84,5 +79,5 @@ export function hasLegalMove<S extends BaseGameState, M extends BaseMove, C>(
   state: S,
   seat: Seat,
 ): boolean {
-  return game.getLegalMoves(state, seat).length > 0
+  return game.getLegalMoves(state, seat).length > 0;
 }

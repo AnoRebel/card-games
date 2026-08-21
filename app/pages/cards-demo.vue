@@ -3,14 +3,13 @@
  * Dev-only sanity page: renders all 52 faces, the themed back, hand and pile
  * layouts. Used to verify the presentation layer (task 3.6).
  */
-import { standardDeck, type Card } from '@card-games/engine-core'
+import { standardDeck, type Card } from "@card-games/engine-core";
 
-const deck = standardDeck()
-const sampleHand = deck.slice(0, 7)
-const { backgrounds, backgroundId, allBacks, cardBackId, background } =
-  useCardTheme()
+const deck = standardDeck();
+const sampleHand = deck.slice(0, 7);
+const { backgrounds, backgroundId, allBacks, cardBackId, background } = useCardTheme();
 
-useHead({ title: 'Cards demo' })
+useHead({ title: "Cards demo" });
 </script>
 
 <template>

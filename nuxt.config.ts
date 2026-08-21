@@ -1,5 +1,5 @@
-import { execSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 /**
  * Automated version string, resolved ONCE at build time:
@@ -8,23 +8,31 @@ import { readFileSync } from 'node:fs'
  * builds without a .git dir still stamp a real version; falls back to git.
  */
 function resolveVersion(): string {
-  if (process.env.NUXT_PUBLIC_APP_VERSION) return process.env.NUXT_PUBLIC_APP_VERSION
-  let pkgVersion = '0.0.0'
+  if (process.env.NUXT_PUBLIC_APP_VERSION) return process.env.NUXT_PUBLIC_APP_VERSION;
+  let pkgVersion = "0.0.0";
   try {
-    pkgVersion = JSON.parse(readFileSync('./package.json', 'utf8')).version || pkgVersion
-  } catch { /* keep default */ }
-  const sha = process.env.GIT_SHA?.slice(0, 7) || tryGit('git rev-parse --short HEAD')
-  const dirty = process.env.GIT_SHA ? '' : tryGit('git status --porcelain') ? '-dirty' : ''
-  return sha ? `${pkgVersion}+${sha}${dirty}` : pkgVersion
+    pkgVersion = JSON.parse(readFileSync("./package.json", "utf8")).version || pkgVersion;
+  } catch {
+    /* keep default */
+  }
+  const sha = process.env.GIT_SHA?.slice(0, 7) || tryGit("git rev-parse --short HEAD");
+  const dirty = process.env.GIT_SHA
+    ? ""
+    : tryGit("git status --porcelain")
+      ? "-dirty"
+      : "";
+  return sha ? `${pkgVersion}+${sha}${dirty}` : pkgVersion;
 }
 function tryGit(cmd: string): string {
   try {
-    return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    return execSync(cmd, { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim();
   } catch {
-    return ''
+    return "";
   }
 }
-const APP_VERSION = resolveVersion()
+const APP_VERSION = resolveVersion();
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -32,19 +40,19 @@ export default defineNuxtConfig({
     compatibilityVersion: 5,
   },
 
-  compatibilityDate: '2026-06-01',
+  compatibilityDate: "2026-06-01",
 
   modules: [
-    '@nuxt/ui',
-    '@vueuse/nuxt',
-    '@vueuse/motion/nuxt',
-    '@nuxt/eslint',
-    '@nuxt/icon',
-    '@nuxt/image',
-    '@nuxt/fonts',
-    '@vite-pwa/nuxt',
-    'nuxt-i18n-micro',
-    'nuxt-umami',
+    "@nuxt/ui",
+    "@vueuse/nuxt",
+    "@vueuse/motion/nuxt",
+    "@nuxt/eslint",
+    "@nuxt/icon",
+    "@nuxt/image",
+    "@nuxt/fonts",
+    "@vite-pwa/nuxt",
+    "nuxt-i18n-micro",
+    "nuxt-umami",
   ],
 
   // PWA — installable + offline-capable. Offline/LAN play is fully client-side
@@ -52,36 +60,36 @@ export default defineNuxtConfig({
   // fonts. The realtime API/WebSocket paths are never cached (they need the
   // network); the SPA navigate fallback is denied for them.
   pwa: {
-    registerType: 'autoUpdate',
+    registerType: "autoUpdate",
     manifest: {
-      name: 'Card Games — Last Card & Albastini',
-      short_name: 'Card Games',
+      name: "Card Games — Last Card & Albastini",
+      short_name: "Card Games",
       description:
-        'Play Last Card and Albastini — offline, on your local network, or online with friends.',
-      lang: 'en',
-      theme_color: '#1b3a2c',
-      background_color: '#0f2419',
-      display: 'standalone',
-      orientation: 'any',
-      categories: ['games', 'entertainment'],
+        "Play Last Card and Albastini — offline, on your local network, or online with friends.",
+      lang: "en",
+      theme_color: "#1b3a2c",
+      background_color: "#0f2419",
+      display: "standalone",
+      orientation: "any",
+      categories: ["games", "entertainment"],
       icons: [
-        { src: '/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-        { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+        { src: "/pwa-64x64.png", sizes: "64x64", type: "image/png" },
+        { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+        { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
         {
-          src: '/maskable-icon-512x512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable',
+          src: "/maskable-icon-512x512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
         },
       ],
     },
     workbox: {
-      navigateFallback: '/',
+      navigateFallback: "/",
       // Realtime paths must hit the network, never the offline app shell.
       navigateFallbackDenylist: [/^\/api\//, /^\/_ws/],
       // Precache the shell + assets needed to play offline (card art is large).
-      globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,json}'],
+      globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,json}"],
       maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       cleanupOutdatedCaches: true,
     },
@@ -93,7 +101,7 @@ export default defineNuxtConfig({
     },
     devOptions: {
       enabled: false,
-      type: 'module',
+      type: "module",
     },
   },
 
@@ -101,10 +109,10 @@ export default defineNuxtConfig({
   // Both are no-ops until their site ids are provided via env, so local/dev runs
   // don't phone home.
   umami: {
-    id: process.env.NUXT_UMAMI_SITE_ID || '',
-    host: 'https://umami.anorebel.net',
+    id: process.env.NUXT_UMAMI_SITE_ID || "",
+    host: "https://umami.anorebel.net",
     autoTrack: true,
-    proxy: 'cloak',
+    proxy: "cloak",
   },
 
   // Rybbit (self-hosted) injected DIRECTLY via app.head — the docs' alternative
@@ -118,24 +126,22 @@ export default defineNuxtConfig({
   app: {
     head: {
       // viewport-fit=cover so env(safe-area-inset-*) resolves on notched phones.
-      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
+      viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
       meta: [
         // Matches the PWA manifest theme_color so the browser/OS chrome tints
         // to the felt-green brand when installed.
-        { name: 'theme-color', content: '#1b3a2c' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
-        { name: 'apple-mobile-web-app-title', content: 'Card Games' },
+        { name: "theme-color", content: "#1b3a2c" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+        { name: "apple-mobile-web-app-title", content: "Card Games" },
       ],
-      link: [
-        { rel: 'apple-touch-icon', href: '/apple-touch-icon-180x180.png' },
-      ],
+      link: [{ rel: "apple-touch-icon", href: "/apple-touch-icon-180x180.png" }],
       script: process.env.NUXT_RYBBIT_SITE_ID
         ? [
             {
-              src: 'https://rybbit.anorebel.net/api/script.js',
+              src: "https://rybbit.anorebel.net/api/script.js",
               defer: true,
-              'data-site-id': process.env.NUXT_RYBBIT_SITE_ID,
+              "data-site-id": process.env.NUXT_RYBBIT_SITE_ID,
             },
           ]
         : [],
@@ -146,14 +152,14 @@ export default defineNuxtConfig({
   // natural fit (Dume/Jike/Mzungu surface in translations).
   i18n: {
     locales: [
-      { code: 'en', iso: 'en-US', dir: 'ltr' },
-      { code: 'sw', iso: 'sw-TZ', dir: 'ltr' },
+      { code: "en", iso: "en-US", dir: "ltr" },
+      { code: "sw", iso: "sw-TZ", dir: "ltr" },
     ],
-    defaultLocale: 'en',
-    translationDir: 'locales',
+    defaultLocale: "en",
+    translationDir: "locales",
     meta: true,
     // Remember the chosen locale across reloads.
-    localeCookie: 'cg-locale',
+    localeCookie: "cg-locale",
   },
 
   // Prettier owns formatting; keep ESLint focused on code-quality rules only.
@@ -174,9 +180,9 @@ export default defineNuxtConfig({
 
   // Register nested component dirs without a path prefix so e.g.
   // components/games/LastCardTable.vue is usable as <LastCardTable>.
-  components: [{ path: '~/components', pathPrefix: false }],
+  components: [{ path: "~/components", pathPrefix: false }],
 
-  css: ['~/assets/css/main.css'],
+  css: ["~/assets/css/main.css"],
 
   // Self-hosted fonts only. Files live in /public/fonts using the @nuxt/fonts
   // auto-discovery pattern (<family>-<weight>-<style>.woff2); the module
@@ -185,28 +191,28 @@ export default defineNuxtConfig({
   //   Outfit → Last Card accent             Fraunces → Albastini accent
   fonts: {
     defaults: {
-      weights: ['400', '500', '600', '700'],
-      styles: ['normal'],
-      subsets: ['latin'],
+      weights: ["400", "500", "600", "700"],
+      styles: ["normal"],
+      subsets: ["latin"],
     },
     families: [
       {
-        name: 'Inter',
-        provider: 'local',
-        weights: ['400', '500', '600', '700'],
+        name: "Inter",
+        provider: "local",
+        weights: ["400", "500", "600", "700"],
       },
       {
-        name: 'Bricolage Grotesque',
-        provider: 'local',
-        weights: ['600', '700', '800'],
+        name: "Bricolage Grotesque",
+        provider: "local",
+        weights: ["600", "700", "800"],
       },
-      { name: 'Outfit', provider: 'local', weights: ['500', '600', '700'] },
+      { name: "Outfit", provider: "local", weights: ["500", "600", "700"] },
       {
         // Fraunces ships expressive italics — kept for Albastini's heritage feel.
-        name: 'Fraunces',
-        provider: 'local',
-        weights: ['500', '600', '700'],
-        styles: ['normal', 'italic'],
+        name: "Fraunces",
+        provider: "local",
+        weights: ["500", "600", "700"],
+        styles: ["normal", "italic"],
       },
     ],
   },
@@ -214,9 +220,9 @@ export default defineNuxtConfig({
   // Transpile the workspace engine/game packages (shipped as TS source).
   build: {
     transpile: [
-      '@card-games/engine-core',
-      '@card-games/game-last-card',
-      '@card-games/game-albastini',
+      "@card-games/engine-core",
+      "@card-games/game-last-card",
+      "@card-games/game-albastini",
     ],
   },
 
@@ -228,26 +234,26 @@ export default defineNuxtConfig({
     // off unless explicitly enabled (NUXT_CONDUIT_ENABLED=true).
     conduit: {
       enabled: false,
-      authMode: 'none', // 'none' | 'key'
-      key: 'conduit', // required when authMode === 'key'
+      authMode: "none", // 'none' | 'key'
+      key: "conduit", // required when authMode === 'key'
       relayMaxMessageBytes: 65536,
-      allowedOrigins: '', // comma-separated; empty = allow all (dev)
+      allowedOrigins: "", // comma-separated; empty = allow all (dev)
     },
     // Analytics site ids (overridable via NUXT_RYBBIT_SITE_ID / NUXT_UMAMI_SITE_ID).
     rybbit: {
-      siteId: process.env.NUXT_RYBBIT_SITE_ID || '',
+      siteId: process.env.NUXT_RYBBIT_SITE_ID || "",
     },
     umami: {
-      id: process.env.NUXT_UMAMI_SITE_ID || '',
+      id: process.env.NUXT_UMAMI_SITE_ID || "",
     },
     public: {
       // Build-stamped app version (overridable via NUXT_PUBLIC_APP_VERSION).
       appVersion: APP_VERSION,
       conduit: {
         // Signaling/relay endpoint path (same Nitro server by default).
-        path: '/api/conduit',
+        path: "/api/conduit",
         // Preferred transport: 'auto' | 'webrtc' | 'websocket'.
-        transport: 'auto',
+        transport: "auto",
       },
     },
   },
@@ -255,4 +261,4 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
   },
-})
+});

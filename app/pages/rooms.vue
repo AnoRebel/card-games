@@ -4,63 +4,73 @@
  * take a seat if the lobby still has room). Locked rooms never appear here.
  * Polls the room list so newly created rooms show up without a manual refresh.
  */
-import { getGame } from '@card-games/engine-core'
+import { getGame } from "@card-games/engine-core";
 
 interface PublicRoomInfo {
-  id: string
-  gameId: string
-  phase: 'lobby' | 'in-progress' | 'finished'
-  seated: number
-  spectators: number
-  maxPlayers: number
-  startedAt: string | null
+  id: string;
+  gameId: string;
+  phase: "lobby" | "in-progress" | "finished";
+  seated: number;
+  spectators: number;
+  maxPlayers: number;
+  startedAt: string | null;
 }
 
-const { $ts } = useI18n()
-useHead({ title: () => $ts('lobby.browseRooms') })
+const { $ts } = useI18n();
+useHead({ title: () => $ts("lobby.browseRooms") });
 
 const { data, refresh, pending } = await useFetch<{ rooms: PublicRoomInfo[] }>(
-  '/api/rooms',
+  "/api/rooms",
   { default: () => ({ rooms: [] }) },
-)
-const rooms = computed(() => data.value?.rooms ?? [])
+);
+const rooms = computed(() => data.value?.rooms ?? []);
 
 // Light polling so the list stays fresh while a player waits.
-let timer: ReturnType<typeof setInterval> | null = null
+let timer: ReturnType<typeof setInterval> | null = null;
 onMounted(() => {
-  timer = setInterval(() => refresh(), 5000)
-})
+  timer = setInterval(() => refresh(), 5000);
+});
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
-})
+  if (timer) clearInterval(timer);
+});
 
-const gameName = (id: string) => getGame(id)?.meta.name ?? id
-const phaseLabel = (p: PublicRoomInfo['phase']) =>
-  p === 'lobby'
-    ? $ts('lobby.phaseLobby')
-    : p === 'in-progress'
-      ? $ts('lobby.phaseInProgress')
-      : $ts('lobby.phaseFinished')
+const gameName = (id: string) => getGame(id)?.meta.name ?? id;
+const phaseLabel = (p: PublicRoomInfo["phase"]) =>
+  p === "lobby"
+    ? $ts("lobby.phaseLobby")
+    : p === "in-progress"
+      ? $ts("lobby.phaseInProgress")
+      : $ts("lobby.phaseFinished");
 
-const router = useRouter()
-const { $localePath } = useI18n()
+const router = useRouter();
+const { $localePath } = useI18n();
 function spectate(r: PublicRoomInfo) {
-  router.push({ path: $localePath(`/play/${r.gameId}`), query: { room: r.id, spectate: '1' } })
+  router.push({
+    path: $localePath(`/play/${r.gameId}`),
+    query: { room: r.id, spectate: "1" },
+  });
 }
 function joinSeat(r: PublicRoomInfo) {
-  router.push({ path: $localePath(`/play/${r.gameId}`), query: { room: r.id } })
+  router.push({ path: $localePath(`/play/${r.gameId}`), query: { room: r.id } });
 }
-const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPlayers
+const hasSeat = (r: PublicRoomInfo) => r.phase === "lobby" && r.seated < r.maxPlayers;
 </script>
 
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <UButton :to="$localePath('/')" variant="ghost" color="neutral" size="sm" icon="i-lucide-arrow-left" square />
+        <UButton
+          :to="$localePath('/')"
+          variant="ghost"
+          color="neutral"
+          size="sm"
+          icon="i-lucide-arrow-left"
+          square
+        />
         <h1 class="text-xl font-bold flex items-center gap-2">
           <UIcon name="i-lucide-radio" :style="{ color: 'var(--cg-accent)' }" />
-          {{ $ts('lobby.browseRooms') }}
+          {{ $ts("lobby.browseRooms") }}
         </h1>
       </div>
       <UButton
@@ -76,23 +86,31 @@ const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPl
     </div>
 
     <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-      {{ $ts('lobby.browseRoomsHint') }}
+      {{ $ts("lobby.browseRoomsHint") }}
     </p>
 
-    <div
-      v-if="!rooms.length"
-      class="cg-surface rounded-2xl p-10 text-center space-y-3"
-    >
+    <div v-if="!rooms.length" class="cg-surface rounded-2xl p-10 text-center space-y-3">
       <p class="text-3xl">🪑</p>
       <p class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-        {{ $ts('lobby.noPublicRooms') }}
+        {{ $ts("lobby.noPublicRooms") }}
       </p>
       <div class="flex flex-wrap justify-center gap-2 pt-1">
-        <UButton :to="$localePath('/play/last-card')" color="primary" size="sm" icon="i-lucide-plus">
-          {{ $ts('lobby.createOnlineRoom') }}
+        <UButton
+          :to="$localePath('/play/last-card')"
+          color="primary"
+          size="sm"
+          icon="i-lucide-plus"
+        >
+          {{ $ts("lobby.createOnlineRoom") }}
         </UButton>
-        <UButton :to="$localePath('/play/last-card')" variant="soft" color="neutral" size="sm" icon="i-lucide-monitor">
-          {{ $ts('lobby.playOffline') }}
+        <UButton
+          :to="$localePath('/play/last-card')"
+          variant="soft"
+          color="neutral"
+          size="sm"
+          icon="i-lucide-monitor"
+        >
+          {{ $ts("lobby.playOffline") }}
         </UButton>
       </div>
     </div>
@@ -105,7 +123,10 @@ const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPl
       >
         <div class="min-w-0 flex-1">
           <p class="font-semibold truncate">{{ gameName(r.gameId) }}</p>
-          <p class="text-xs flex flex-wrap items-center gap-x-3 gap-y-0.5" :style="{ color: 'var(--cg-text-muted)' }">
+          <p
+            class="text-xs flex flex-wrap items-center gap-x-3 gap-y-0.5"
+            :style="{ color: 'var(--cg-text-muted)' }"
+          >
             <span class="inline-flex items-center gap-1">
               <UIcon name="i-lucide-hash" /> {{ r.id }}
             </span>
@@ -131,7 +152,7 @@ const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPl
             icon="i-lucide-log-in"
             @click="joinSeat(r)"
           >
-            {{ $ts('lobby.joinAsPlayer') }}
+            {{ $ts("lobby.joinAsPlayer") }}
           </UButton>
           <UButton
             size="sm"
@@ -140,7 +161,7 @@ const hasSeat = (r: PublicRoomInfo) => r.phase === 'lobby' && r.seated < r.maxPl
             icon="i-lucide-eye"
             @click="spectate(r)"
           >
-            {{ $ts('lobby.spectate') }}
+            {{ $ts("lobby.spectate") }}
           </UButton>
         </div>
       </li>

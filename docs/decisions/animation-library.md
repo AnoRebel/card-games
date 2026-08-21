@@ -17,11 +17,11 @@ The card UI must stay **memory-light and smooth on mobile**, compositor-friendly
 
 ## Options
 
-| Library | Bundle | Model | 2D/3D | Fit |
-|---|---|---|---|---|
-| **Three.js** | ~150 KB+ (WebGL) | Scene graph, imperative | 3D | Overkill — we render 2D SVG cards; a WebGL context is heavy on memory for mobile and adds a parallel render path we don't need. |
-| **Popmotion** | ~5 KB core | Low-level animate/keyframes | 2D | Capable but low-level; `@vueuse/motion` is already built on the same lineage, so adding raw Popmotion duplicates what we have for tier 1. |
-| **Anime.js v4** | ~9 KB (modular ESM) | `animate` + `createTimeline` + `stagger` | 2D | Best fit — first-class timelines/stagger for sequenced events, tiny, framework-agnostic, easy to gate on reduced-motion. |
+| Library         | Bundle              | Model                                    | 2D/3D | Fit                                                                                                                                       |
+| --------------- | ------------------- | ---------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Three.js**    | ~150 KB+ (WebGL)    | Scene graph, imperative                  | 3D    | Overkill — we render 2D SVG cards; a WebGL context is heavy on memory for mobile and adds a parallel render path we don't need.           |
+| **Popmotion**   | ~5 KB core          | Low-level animate/keyframes              | 2D    | Capable but low-level; `@vueuse/motion` is already built on the same lineage, so adding raw Popmotion duplicates what we have for tier 1. |
+| **Anime.js v4** | ~9 KB (modular ESM) | `animate` + `createTimeline` + `stagger` | 2D    | Best fit — first-class timelines/stagger for sequenced events, tiny, framework-agnostic, easy to gate on reduced-motion.                  |
 
 ## Decision
 

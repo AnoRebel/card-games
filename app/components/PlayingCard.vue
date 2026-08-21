@@ -5,23 +5,23 @@
  * Backs render the active themed image. Compositor-friendly hover/selected
  * transforms only (transform/opacity), honouring reduced motion.
  */
-import type { Card, Suit } from '@card-games/engine-core'
-import { isJoker } from '@card-games/engine-core'
+import type { Card, Suit } from "@card-games/engine-core";
+import { isJoker } from "@card-games/engine-core";
 
 const props = withDefaults(
   defineProps<{
-    card?: Card | null
-    faceDown?: boolean
+    card?: Card | null;
+    faceDown?: boolean;
     /** Width in px; height derives from the 0.715 aspect. */
-    width?: number
-    selectable?: boolean
-    selected?: boolean
-    disabled?: boolean
+    width?: number;
+    selectable?: boolean;
+    selected?: boolean;
+    disabled?: boolean;
     /**
      * Overrides the spoken accessible name (e.g. "Play Seven of hearts").
      * Falls back to the plain card name when omitted.
      */
-    actionLabel?: string | null
+    actionLabel?: string | null;
   }>(),
   {
     card: null,
@@ -32,48 +32,48 @@ const props = withDefaults(
     disabled: false,
     actionLabel: null,
   },
-)
+);
 
-const emit = defineEmits<{ select: [] }>()
+const emit = defineEmits<{ select: [] }>();
 
-const { cardBack } = useCardTheme()
-const reduced = usePreferredReducedMotion()
+const { cardBack } = useCardTheme();
+const reduced = usePreferredReducedMotion();
 
-const height = computed(() => Math.round(props.width / 0.715))
+const height = computed(() => Math.round(props.width / 0.715));
 
 // SVG symbol id is `<suit><rank>`, e.g. `c13`.
 const symbolId = computed(() =>
-  props.card ? `#${props.card.suit as Suit}${props.card.rank}` : '',
-)
+  props.card ? `#${props.card.suit as Suit}${props.card.rank}` : "",
+);
 
 // Jokers have no sprite face — render a dedicated star face instead.
-const joker = computed(() => (props.card && isJoker(props.card) ? props.card : null))
+const joker = computed(() => (props.card && isJoker(props.card) ? props.card : null));
 
 const ariaLabel = computed(() => {
-  if (props.faceDown || !props.card) return 'Face-down card'
-  if (props.actionLabel) return props.actionLabel
-  return cardLabel(props.card)
-})
+  if (props.faceDown || !props.card) return "Face-down card";
+  if (props.actionLabel) return props.actionLabel;
+  return cardLabel(props.card);
+});
 
 function cardLabel(c: Card): string {
-  if (isJoker(c)) return c.jokerId === 1 ? 'Black Joker' : 'Red Joker'
+  if (isJoker(c)) return c.jokerId === 1 ? "Black Joker" : "Red Joker";
   const ranks: Record<number, string> = {
-    1: 'Ace',
-    11: 'Jack',
-    12: 'Queen',
-    13: 'King',
-  }
+    1: "Ace",
+    11: "Jack",
+    12: "Queen",
+    13: "King",
+  };
   const suits: Record<Suit, string> = {
-    c: 'clubs',
-    s: 'spades',
-    h: 'hearts',
-    d: 'diamonds',
-  }
-  return `${ranks[c.rank] ?? c.rank} of ${suits[c.suit]}`
+    c: "clubs",
+    s: "spades",
+    h: "hearts",
+    d: "diamonds",
+  };
+  return `${ranks[c.rank] ?? c.rank} of ${suits[c.suit]}`;
 }
 
 function onActivate() {
-  if (props.selectable && !props.disabled) emit('select')
+  if (props.selectable && !props.disabled) emit("select");
 }
 </script>
 
@@ -107,7 +107,9 @@ function onActivate() {
         text-anchor="middle"
         font-size="72"
         :fill="joker.jokerId === 1 ? '#1a1a1a' : '#d21f3c'"
-      >★</text>
+      >
+        ★
+      </text>
       <text
         x="70"
         y="150"
@@ -116,7 +118,9 @@ function onActivate() {
         font-weight="700"
         letter-spacing="1"
         :fill="joker.jokerId === 1 ? '#1a1a1a' : '#d21f3c'"
-      >JOKER</text>
+      >
+        JOKER
+      </text>
     </svg>
 
     <!-- Face -->

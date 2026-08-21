@@ -3,22 +3,27 @@
  * Global settings slideover — opened from anywhere via useSettingsPanel().
  * Replaces the standalone /settings page. Tighter, grouped, mobile-friendly.
  */
-const { open } = useSettingsPanel()
-const { $ts, $switchLocale, $getLocales, $getLocale } = useI18n()
-const { isDark, toggle } = useThemeMode()
-const { theme, motion, themes } = useAppTheme()
-const { notifications, sound } = usePreferences()
-const modalUi = useThemedModalUi()
+const { open } = useSettingsPanel();
+const { $ts, $switchLocale, $getLocales, $getLocale } = useI18n();
+const { isDark, toggle } = useThemeMode();
+const { theme, motion, themes } = useAppTheme();
+const { notifications, sound } = usePreferences();
+const modalUi = useThemedModalUi();
 </script>
 
 <template>
-  <USlideover v-model:open="open" :title="$ts('common.settings')" side="right" :ui="modalUi">
+  <USlideover
+    v-model:open="open"
+    :title="$ts('common.settings')"
+    side="right"
+    :ui="modalUi"
+  >
     <template #body>
       <div class="space-y-5">
         <!-- Profile: avatar, name, and your local stats -->
         <section class="space-y-1.5">
           <label class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $ts('profile.title') }}
+            {{ $ts("profile.title") }}
           </label>
           <ProfileCard />
         </section>
@@ -26,7 +31,7 @@ const modalUi = useThemedModalUi()
         <!-- Visual theme -->
         <section class="space-y-2">
           <span class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $ts('common.appearance') }}
+            {{ $ts("common.appearance") }}
           </span>
           <div class="grid grid-cols-3 gap-2">
             <button
@@ -34,25 +39,28 @@ const modalUi = useThemedModalUi()
               :key="t.id"
               type="button"
               class="group rounded-lg p-0.5 ring-2 transition"
-              :class="theme === t.id ? 'ring-primary' : 'ring-transparent hover:ring-default'"
+              :class="
+                theme === t.id ? 'ring-primary' : 'ring-transparent hover:ring-default'
+              "
               @click="theme = t.id"
             >
-              <span
-                class="block h-10 rounded-md"
-                :style="{ background: t.swatch }"
-              />
+              <span class="block h-10 rounded-md" :style="{ background: t.swatch }" />
               <span class="block text-[11px] mt-1 font-medium">{{ t.name }}</span>
             </button>
           </div>
           <div class="flex items-center justify-between pt-1">
-            <span class="text-sm">{{ isDark ? $ts('theme.darkMode') : $ts('theme.lightMode') }}</span>
+            <span class="text-sm">{{
+              isDark ? $ts("theme.darkMode") : $ts("theme.lightMode")
+            }}</span>
             <USwitch :model-value="isDark" @update:model-value="() => toggle()" />
           </div>
         </section>
 
         <!-- Motion -->
         <section class="space-y-2">
-          <span class="text-xs font-medium uppercase tracking-wide text-muted">Motion</span>
+          <span class="text-xs font-medium uppercase tracking-wide text-muted"
+            >Motion</span
+          >
           <UFieldGroup class="w-full">
             <UButton
               :variant="motion === 'rich' ? 'solid' : 'outline'"
@@ -77,14 +85,16 @@ const modalUi = useThemedModalUi()
 
         <!-- Card theme + uploads -->
         <section class="space-y-2">
-          <span class="text-xs font-medium uppercase tracking-wide text-muted">Cards & table</span>
+          <span class="text-xs font-medium uppercase tracking-wide text-muted"
+            >Cards & table</span
+          >
           <ThemePicker />
         </section>
 
         <!-- Language -->
         <section class="space-y-2">
           <span class="text-xs font-medium uppercase tracking-wide text-muted">
-            {{ $ts('common.language') }}
+            {{ $ts("common.language") }}
           </span>
           <UFieldGroup class="w-full">
             <UButton

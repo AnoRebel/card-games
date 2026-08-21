@@ -4,17 +4,10 @@
 // the whole package type-checks against packages/tsconfig.base.json, whose
 // `lib` excludes the DOM, so any such import is a compile error.
 
-export const ENGINE_CORE_VERSION = '0.1.0'
+export const ENGINE_CORE_VERSION = "0.1.0";
 
 // Deterministic RNG
-export {
-  type RngState,
-  hashSeed,
-  createRng,
-  nextFloat,
-  nextInt,
-  shuffle,
-} from './rng'
+export { type RngState, hashSeed, createRng, nextFloat, nextInt, shuffle } from "./rng";
 
 // Card / deck model
 export {
@@ -36,15 +29,10 @@ export {
   cardShort,
   standardDeck,
   deckWithout,
-} from './cards'
+} from "./cards";
 
 // Turn order
-export {
-  type Direction,
-  nextSeat,
-  advanceSeat,
-  seatOrder,
-} from './turn'
+export { type Direction, nextSeat, advanceSeat, seatOrder } from "./turn";
 
 // Core contract & shared types
 export type {
@@ -56,16 +44,10 @@ export type {
   ScoreResult,
   GameMeta,
   GameModule,
-} from './types'
+} from "./types";
 
 // Move application / validation / replay
-export { applyMove, replay, hasLegalMove } from './apply'
+export { applyMove, replay, hasLegalMove } from "./apply";
 
 // Registry
-export {
-  registerGame,
-  getGame,
-  requireGame,
-  listGames,
-  clearGames,
-} from './registry'
+export { registerGame, getGame, requireGame, listGames, clearGames } from "./registry";

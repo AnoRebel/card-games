@@ -3,20 +3,20 @@
  * Theme picker: choose built-in or uploaded card backs and table backgrounds,
  * and upload custom images (stored as Dexie blobs). Runtime switching is live.
  */
-const { cardBackId, backgroundId, allBacks, backgrounds, uploads } = useCardTheme()
-const toast = useToast()
+const { cardBackId, backgroundId, allBacks, backgrounds, uploads } = useCardTheme();
+const toast = useToast();
 
-async function onUpload(e: Event, kind: 'card-back' | 'background') {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file || !uploads) return
-  const res = await uploads.upload(file, kind)
+async function onUpload(e: Event, kind: "card-back" | "background") {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file || !uploads) return;
+  const res = await uploads.upload(file, kind);
   if (res.ok) {
-    toast.add({ title: 'Uploaded', color: 'success', icon: 'i-lucide-check' })
+    toast.add({ title: "Uploaded", color: "success", icon: "i-lucide-check" });
   } else {
-    toast.add({ title: res.error, color: 'error', icon: 'i-lucide-x' })
+    toast.add({ title: res.error, color: "error", icon: "i-lucide-x" });
   }
-  input.value = ''
+  input.value = "";
 }
 </script>
 
@@ -42,7 +42,9 @@ async function onUpload(e: Event, kind: 'card-back' | 'background') {
           :key="b.id"
           type="button"
           class="rounded-lg overflow-hidden ring-2 transition w-14 h-20"
-          :class="cardBackId === b.id ? 'ring-primary' : 'ring-transparent hover:ring-default'"
+          :class="
+            cardBackId === b.id ? 'ring-primary' : 'ring-transparent hover:ring-default'
+          "
           :title="b.name"
           @click="cardBackId = b.id"
         >
@@ -71,7 +73,11 @@ async function onUpload(e: Event, kind: 'card-back' | 'background') {
           :key="bg.id"
           type="button"
           class="rounded-lg ring-2 transition w-20 h-14"
-          :class="backgroundId === bg.id ? 'ring-primary' : 'ring-transparent hover:ring-default'"
+          :class="
+            backgroundId === bg.id
+              ? 'ring-primary'
+              : 'ring-transparent hover:ring-default'
+          "
           :style="{ background: bg.css }"
           :title="bg.name"
           @click="backgroundId = bg.id"

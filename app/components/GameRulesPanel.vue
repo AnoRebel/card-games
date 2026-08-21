@@ -3,10 +3,10 @@
  * Always-accessible "Rules / How to Play" overlay. Renders per-game content in
  * a slideover so it opens mid-game without losing state (game-learnability).
  */
-const props = defineProps<{ gameId: string }>()
-const open = defineModel<boolean>('open', { default: false })
+const props = defineProps<{ gameId: string }>();
+const open = defineModel<boolean>("open", { default: false });
 
-const { rules } = useGameContent(props.gameId)
+const { rules } = useGameContent(props.gameId);
 </script>
 
 <template>
@@ -20,7 +20,7 @@ const { rules } = useGameContent(props.gameId)
           </ul>
         </section>
         <p v-if="!rules.length" class="text-sm text-muted">
-          {{ $ts('common.noRules') }}
+          {{ $ts("common.noRules") }}
         </p>
       </div>
     </template>

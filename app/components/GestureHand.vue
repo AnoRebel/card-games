@@ -4,120 +4,120 @@
  * (with live drag feedback + a release threshold), or tap. Falls back to tap on
  * desktop. Built on @vueuse/gesture's useDrag.
  */
-import { useDrag } from '@vueuse/gesture'
-import type { Card } from '@card-games/engine-core'
-import { cardId, cardName } from '@card-games/engine-core'
+import { useDrag } from "@vueuse/gesture";
+import type { Card } from "@card-games/engine-core";
+import { cardId, cardName } from "@card-games/engine-core";
 
 const props = withDefaults(
   defineProps<{
-    cards: Card[]
-    playableIds?: Set<string>
-    enabled?: boolean
-    width?: number
+    cards: Card[];
+    playableIds?: Set<string>;
+    enabled?: boolean;
+    width?: number;
   }>(),
   { playableIds: undefined, enabled: false, width: 84 },
-)
-const emit = defineEmits<{ play: [card: Card] }>()
+);
+const emit = defineEmits<{ play: [card: Card] }>();
 
-const el = ref<HTMLElement | null>(null)
-const { width: containerW } = useElementSize(el)
+const el = ref<HTMLElement | null>(null);
+const { width: containerW } = useElementSize(el);
 
 // Deal-in with anime.js: stagger every card on first render, and animate only
 // the newly-arrived cards when the hand grows (a draw). cardId keys make this
 // stable across reorders.
 function dealCards(ids: string[]) {
-  if (!el.value || !ids.length) return
+  if (!el.value || !ids.length) return;
   const nodes = ids
     .map((id) => el.value!.querySelector<HTMLElement>(`[data-card-id="${id}"]`))
-    .filter((n): n is HTMLElement => !!n)
-  if (nodes.length) nextTick(() => dealIn(nodes))
+    .filter((n): n is HTMLElement => !!n);
+  if (nodes.length) nextTick(() => dealIn(nodes));
 }
 
 onMounted(() => {
-  if (props.cards.length) dealCards(props.cards.map((c) => cardId(c)))
-})
+  if (props.cards.length) dealCards(props.cards.map((c) => cardId(c)));
+});
 
 watch(
   () => props.cards.map((c) => cardId(c)),
   (next, prev) => {
-    const before = new Set(prev ?? [])
-    const fresh = next.filter((id) => !before.has(id))
+    const before = new Set(prev ?? []);
+    const fresh = next.filter((id) => !before.has(id));
     // Only animate genuine additions (draws/deals), not plays or reorders.
-    if (fresh.length && fresh.length < next.length) dealCards(fresh)
-    else if (fresh.length === next.length) dealCards(fresh)
+    if (fresh.length && fresh.length < next.length) dealCards(fresh);
+    else if (fresh.length === next.length) dealCards(fresh);
   },
-)
+);
 
 const isPlayable = (c: Card) =>
-  props.enabled && (props.playableIds === undefined || props.playableIds.has(cardId(c)))
+  props.enabled && (props.playableIds === undefined || props.playableIds.has(cardId(c)));
 
 // Overlap step so the hand always fits.
 const step = computed(() => {
-  const n = props.cards.length
-  if (n <= 1) return props.width
-  const avail = Math.max(containerW.value || props.width * n, props.width)
-  const needed = (avail - props.width) / (n - 1)
-  return Math.max(Math.min(props.width * 0.66, needed), 22)
-})
+  const n = props.cards.length;
+  if (n <= 1) return props.width;
+  const avail = Math.max(containerW.value || props.width * n, props.width);
+  const needed = (avail - props.width) / (n - 1);
+  return Math.max(Math.min(props.width * 0.66, needed), 22);
+});
 
 // Per-card live drag offset for visual feedback. A card is "active" only while
 // being dragged; on release we clear it back to undefined via a Map reset.
-const drag = ref<Map<string, { x: number; y: number; lifting: boolean }>>(new Map())
-const PLAY_THRESHOLD = -70 // px upward to trigger a play
+const drag = ref<Map<string, { x: number; y: number; lifting: boolean }>>(new Map());
+const PLAY_THRESHOLD = -70; // px upward to trigger a play
 
 function setDrag(id: string, v: { x: number; y: number; lifting: boolean } | null) {
-  const next = new Map(drag.value)
-  if (v) next.set(id, v)
-  else next.delete(id)
-  drag.value = next
+  const next = new Map(drag.value);
+  if (v) next.set(id, v);
+  else next.delete(id);
+  drag.value = next;
 }
 function getDrag(id: string) {
-  return drag.value.get(id)
+  return drag.value.get(id);
 }
 
 function bindCard(node: HTMLElement, card: Card) {
   useDrag(
     ({ movement: [mx, my], dragging, last }) => {
-      const id = cardId(card)
-      if (!isPlayable(card)) return
+      const id = cardId(card);
+      if (!isPlayable(card)) return;
       if (dragging) {
-        setDrag(id, { x: mx, y: my, lifting: my < PLAY_THRESHOLD })
+        setDrag(id, { x: mx, y: my, lifting: my < PLAY_THRESHOLD });
       }
       if (last) {
-        const played = my < PLAY_THRESHOLD
-        setDrag(id, null)
-        if (played) emit('play', card)
+        const played = my < PLAY_THRESHOLD;
+        setDrag(id, null);
+        if (played) emit("play", card);
       }
     },
     { domTarget: node, eventOptions: { passive: false } },
-  )
+  );
 }
 
 // Apply the directive-like binding via a template ref callback.
-const cardRefs = new Map<string, HTMLElement>()
+const cardRefs = new Map<string, HTMLElement>();
 function setCardRef(node: Element | null, card: Card) {
-  const id = cardId(card)
+  const id = cardId(card);
   if (node && !cardRefs.has(id)) {
-    cardRefs.set(id, node as HTMLElement)
-    bindCard(node as HTMLElement, card)
+    cardRefs.set(id, node as HTMLElement);
+    bindCard(node as HTMLElement, card);
   } else if (!node) {
-    cardRefs.delete(id)
+    cardRefs.delete(id);
   }
 }
 
 function onTap(card: Card) {
-  if (isPlayable(card)) emit('play', card)
+  if (isPlayable(card)) emit("play", card);
 }
 
 /** Expose a card's DOM node so the table can fly it to the discard on play. */
 function cardEl(id: string): HTMLElement | null {
-  return cardRefs.get(id) ?? null
+  return cardRefs.get(id) ?? null;
 }
 /** Expose the hand's root element so the table can fly drawn cards to it. */
 function rootEl(): HTMLElement | null {
-  return el.value
+  return el.value;
 }
-defineExpose({ cardEl, rootEl })
+defineExpose({ cardEl, rootEl });
 </script>
 
 <template>
@@ -141,8 +141,12 @@ defineExpose({ cardEl, rootEl })
           transform: getDrag(cardId(card))
             ? `translate(${getDrag(cardId(card))!.x}px, ${getDrag(cardId(card))!.y}px) rotate(${getDrag(cardId(card))!.x * 0.05}deg)`
             : undefined,
-          transition: getDrag(cardId(card)) ? 'none' : 'transform 0.25s cubic-bezier(0.22,1,0.36,1)',
-          filter: getDrag(cardId(card))?.lifting ? 'drop-shadow(0 0 0 2px var(--cg-accent))' : undefined,
+          transition: getDrag(cardId(card))
+            ? 'none'
+            : 'transform 0.25s cubic-bezier(0.22,1,0.36,1)',
+          filter: getDrag(cardId(card))?.lifting
+            ? 'drop-shadow(0 0 0 2px var(--cg-accent))'
+            : undefined,
         }"
       >
         <PlayingCard
@@ -162,7 +166,7 @@ defineExpose({ cardEl, rootEl })
       class="absolute -bottom-1 text-[10px] uppercase tracking-wider sm:hidden"
       :style="{ color: 'var(--cg-text-muted)' }"
     >
-      {{ $ts('game.swipeHint') }}
+      {{ $ts("game.swipeHint") }}
     </span>
   </div>
 </template>
@@ -175,7 +179,8 @@ defineExpose({ cardEl, rootEl })
   transform: translateY(-6px);
 }
 .cg-playable :deep(.cg-card) {
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--cg-accent) 60%, transparent),
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--cg-accent) 60%, transparent),
     0 6px 14px -4px color-mix(in oklch, var(--cg-accent) 40%, transparent);
   border-radius: 7%;
 }

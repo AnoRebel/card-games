@@ -3,87 +3,87 @@
  * Floating chat — draggable (move via header) and resizable (CSS resize handle).
  * Minimizable to a bubble with an unread-message badge. Position/size persist.
  */
-import { format } from 'date-fns'
-import { TZDate } from '@date-fns/tz'
-import { useDraggable } from '@vueuse/core'
-import type { GameTransport } from '~/transports/types'
-import type { WsTransport } from '~/transports/WsTransport'
+import { format } from "date-fns";
+import { TZDate } from "@date-fns/tz";
+import { useDraggable } from "@vueuse/core";
+import type { GameTransport } from "~/transports/types";
+import type { WsTransport } from "~/transports/WsTransport";
 
-const props = defineProps<{ transport: GameTransport; name: string }>()
+const props = defineProps<{ transport: GameTransport; name: string }>();
 
-const session = useGameSession(props.transport)
+const session = useGameSession(props.transport);
 // Stable local identity → local hotseat chat is attributed to the device owner,
 // not the rotating active seat. (Online ignores this; the server attributes it.)
-const { id: localId, name: localName } = usePlayerIdentity()
+const { id: localId, name: localName } = usePlayerIdentity();
 
 // --- Voice chat (online only) ---------------------------------------------
 // Offline/local play has no voice; the composable only spins up when enabled.
-const isOnline = computed(() => props.transport.mode === 'online')
+const isOnline = computed(() => props.transport.mode === "online");
 const ws = computed(() =>
   isOnline.value ? (props.transport as unknown as WsTransport<never, never>) : null,
-)
+);
 const voice = useVoiceChat({
-  roomId: () => ws.value?.roomId ?? '',
-  peerId: localId.value || 'anon',
+  roomId: () => ws.value?.roomId ?? "",
+  peerId: localId.value || "anon",
   name: () => props.name || localName.value,
   enabled: isOnline,
-})
-const draft = ref('')
-const open = ref(false)
-const unread = ref(0)
-const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-const listRef = ref<HTMLElement | null>(null)
-const handleRef = ref<HTMLElement | null>(null)
-const panelRef = ref<HTMLElement | null>(null)
+});
+const draft = ref("");
+const open = ref(false);
+const unread = ref(0);
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const listRef = ref<HTMLElement | null>(null);
+const handleRef = ref<HTMLElement | null>(null);
+const panelRef = ref<HTMLElement | null>(null);
 
 // Persisted panel position (bottom-right by default via initialValue).
-const stored = useLocalStorage('cg:chat-pos', { x: -1, y: -1 })
+const stored = useLocalStorage("cg:chat-pos", { x: -1, y: -1 });
 const initial =
   import.meta.client && stored.value.x >= 0
     ? { x: stored.value.x, y: stored.value.y }
-    : { x: 0, y: 0 }
+    : { x: 0, y: 0 };
 
 const { x, y, style } = useDraggable(panelRef, {
   handle: handleRef,
   initialValue: initial,
   preventDefault: true,
   onEnd: () => {
-    stored.value = { x: x.value, y: y.value }
+    stored.value = { x: x.value, y: y.value };
   },
-})
-const positioned = computed(() => stored.value.x >= 0)
+});
+const positioned = computed(() => stored.value.x >= 0);
 
 watch(
   () => session.chat.value.length,
   (n, prev) => {
-    if (!open.value && n > (prev ?? 0)) unread.value += n - (prev ?? 0)
-    if (open.value) nextTick(scrollToEnd)
+    if (!open.value && n > (prev ?? 0)) unread.value += n - (prev ?? 0);
+    if (open.value) nextTick(scrollToEnd);
   },
-)
+);
 watch(open, (o) => {
   if (o) {
-    unread.value = 0
-    nextTick(scrollToEnd)
+    unread.value = 0;
+    nextTick(scrollToEnd);
   }
-})
+});
 
 function scrollToEnd() {
-  if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight
+  if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight;
 }
 async function send() {
-  const body = draft.value.trim()
-  if (!body) return
+  const body = draft.value.trim();
+  if (!body) return;
   const res = await session.sendChat(body, {
     id: localId.value,
     name: props.name || localName.value,
-  })
-  if (res.ok) draft.value = ''
+  });
+  if (res.ok) draft.value = "";
 }
 function time(iso: string) {
   try {
-    return format(new TZDate(iso, tz), 'HH:mm')
+    return format(new TZDate(iso, tz), "HH:mm");
   } catch {
-    return ''
+    return "";
   }
 }
 </script>
@@ -117,8 +117,11 @@ function time(iso: string) {
           :style="{ borderColor: 'var(--cg-border)' }"
         >
           <span class="flex items-center gap-1.5">
-            <UIcon name="i-lucide-grip-horizontal" :style="{ color: 'var(--cg-text-muted)' }" />
-            {{ $ts('chat.title') }}
+            <UIcon
+              name="i-lucide-grip-horizontal"
+              :style="{ color: 'var(--cg-text-muted)' }"
+            />
+            {{ $ts("chat.title") }}
           </span>
           <UButton
             size="xs"
@@ -154,13 +157,17 @@ function time(iso: string) {
                 :label="$ts('voice.leave')"
                 @click="voice.leave()"
               />
-              <UTooltip :text="voice.muted.value ? $ts('voice.unmute') : $ts('voice.mute')">
+              <UTooltip
+                :text="voice.muted.value ? $ts('voice.unmute') : $ts('voice.mute')"
+              >
                 <UButton
                   size="xs"
                   variant="ghost"
                   color="neutral"
                   :icon="voice.muted.value ? 'i-lucide-mic-off' : 'i-lucide-mic'"
-                  :aria-label="voice.muted.value ? $ts('voice.unmute') : $ts('voice.mute')"
+                  :aria-label="
+                    voice.muted.value ? $ts('voice.unmute') : $ts('voice.mute')
+                  "
                   @click="voice.toggleMute()"
                 />
               </UTooltip>
@@ -169,20 +176,24 @@ function time(iso: string) {
                 class="text-xs"
                 :style="{ color: 'var(--cg-text-muted)' }"
               >
-                {{ $ts('voice.connecting') }}
+                {{ $ts("voice.connecting") }}
               </span>
               <span
                 v-else
                 class="text-xs ml-auto"
                 :style="{ color: 'var(--cg-text-muted)' }"
               >
-                {{ $ts('voice.inVoice', { count: voice.peers.value.length + 1 }) }}
+                {{ $ts("voice.inVoice", { count: voice.peers.value.length + 1 }) }}
               </span>
             </template>
           </div>
 
           <p v-if="voice.error.value" class="text-xs text-red-500">
-            {{ voice.error.value === 'micDenied' ? $ts('voice.micDenied') : $ts('voice.unsupported') }}
+            {{
+              voice.error.value === "micDenied"
+                ? $ts("voice.micDenied")
+                : $ts("voice.unsupported")
+            }}
           </p>
 
           <ul v-if="voice.inVoice.value && voice.peers.value.length" class="space-y-1">
@@ -200,21 +211,34 @@ function time(iso: string) {
                 }"
                 :title="p.speaking ? $ts('voice.speaking') : ''"
               />
-              <UIcon name="i-lucide-volume-2" class="shrink-0" :style="{ color: 'var(--cg-text-muted)' }" />
+              <UIcon
+                name="i-lucide-volume-2"
+                class="shrink-0"
+                :style="{ color: 'var(--cg-text-muted)' }"
+              />
               <span class="truncate">{{ p.name }}</span>
             </li>
           </ul>
         </div>
 
-        <div ref="listRef" class="flex-1 overflow-y-auto p-3 space-y-1.5 text-sm" data-tour="chat">
+        <div
+          ref="listRef"
+          class="flex-1 overflow-y-auto p-3 space-y-1.5 text-sm"
+          data-tour="chat"
+        >
           <p v-if="!session.chat.value.length" :style="{ color: 'var(--cg-text-muted)' }">
-            {{ $ts('chat.empty') }}
+            {{ $ts("chat.empty") }}
           </p>
           <div v-for="m in session.chat.value" :key="m.id" class="flex gap-2">
-            <span class="text-xs shrink-0 tabular-nums" :style="{ color: 'var(--cg-text-muted)' }">
+            <span
+              class="text-xs shrink-0 tabular-nums"
+              :style="{ color: 'var(--cg-text-muted)' }"
+            >
               {{ time(m.at) }}
             </span>
-            <span><span class="font-medium">{{ m.senderName }}:</span> {{ m.body }}</span>
+            <span
+              ><span class="font-medium">{{ m.senderName }}:</span> {{ m.body }}</span
+            >
           </div>
         </div>
 
@@ -223,8 +247,20 @@ function time(iso: string) {
           :style="{ borderColor: 'var(--cg-border)' }"
           @submit.prevent="send"
         >
-          <UInput v-model="draft" :placeholder="$ts('chat.placeholder')" size="sm" class="flex-1" :maxlength="500" />
-          <UButton type="submit" size="sm" icon="i-lucide-send" :disabled="!draft.trim()" :title="$ts('chat.send')" />
+          <UInput
+            v-model="draft"
+            :placeholder="$ts('chat.placeholder')"
+            size="sm"
+            class="flex-1"
+            :maxlength="500"
+          />
+          <UButton
+            type="submit"
+            size="sm"
+            icon="i-lucide-send"
+            :disabled="!draft.trim()"
+            :title="$ts('chat.send')"
+          />
         </form>
 
         <!-- visible resize affordance (the panel itself is CSS-resizable) -->
@@ -257,7 +293,7 @@ function time(iso: string) {
         v-if="unread"
         class="absolute -top-1 -right-1 min-w-5 h-5 px-1 grid place-items-center rounded-full bg-red-500 text-white text-[11px] font-bold"
       >
-        {{ unread > 9 ? '9+' : unread }}
+        {{ unread > 9 ? "9+" : unread }}
       </span>
     </button>
   </div>

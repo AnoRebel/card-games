@@ -36,13 +36,13 @@ on an action card** — your final card must be a plain one.
 
 **Action cards**
 
-| Card | Effect |
-| --- | --- |
-| **2** | Next player picks up 2 (stacks). |
+| Card      | Effect                                                                                                          |
+| --------- | --------------------------------------------------------------------------------------------------------------- |
+| **2**     | Next player picks up 2 (stacks).                                                                                |
 | **Joker** | Next player picks up 5. A Joker may stack onto a pending 2 (2 + 5 = 7), but a 2 may **not** stack onto a Joker. |
-| **7** | Skips the next player. |
-| **8** | Reverses the direction of play. |
-| **Jack** | Wild — choose the next suit. |
+| **7**     | Skips the next player.                                                                                          |
+| **8**     | Reverses the direction of play.                                                                                 |
+| **Jack**  | Wild — choose the next suit.                                                                                    |
 
 **Last Card!** When a play leaves you on your last card (or your last same-rank
 group), the game prompts you — on your turn, untimed — to call **“Last Card”**.

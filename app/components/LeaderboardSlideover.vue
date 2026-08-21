@@ -5,55 +5,70 @@
  * offline) are this device's LOCAL history — honest "your games", never merged
  * with the global ranking.
  */
-import type { LeaderboardScope } from '~/composables/useLeaderboard'
+import type { LeaderboardScope } from "~/composables/useLeaderboard";
 
-type Scope = 'global' | LeaderboardScope
-interface Row { playerId: string; playerName: string; played: number; wins: number }
+type Scope = "global" | LeaderboardScope;
+interface Row {
+  playerId: string;
+  playerName: string;
+  played: number;
+  wins: number;
+}
 
-const props = defineProps<{ gameId: string }>()
-const open = defineModel<boolean>('open', { default: false })
+const props = defineProps<{ gameId: string }>();
+const open = defineModel<boolean>("open", { default: false });
 
-const scope = ref<Scope>('global')
+const scope = ref<Scope>("global");
 const localScope = computed<LeaderboardScope>(() =>
-  scope.value === 'global' ? 'all' : scope.value,
-)
-const { rows: localRows } = useLeaderboard(() => props.gameId, () => localScope.value)
+  scope.value === "global" ? "all" : scope.value,
+);
+const { rows: localRows } = useLeaderboard(
+  () => props.gameId,
+  () => localScope.value,
+);
 
 // Global board — fetched from the server (only when the tab is active + open).
-const globalUnavailable = ref(false)
+const globalUnavailable = ref(false);
 const { data: globalData } = await useAsyncData(
   () => `lb-${props.gameId}`,
   async () => {
     try {
-      const res = await $fetch<{ rows: Row[]; unavailable?: boolean }>(`/api/leaderboard/${props.gameId}`)
-      globalUnavailable.value = !!res.unavailable
-      return res.rows
+      const res = await $fetch<{ rows: Row[]; unavailable?: boolean }>(
+        `/api/leaderboard/${props.gameId}`,
+      );
+      globalUnavailable.value = !!res.unavailable;
+      return res.rows;
     } catch {
-      globalUnavailable.value = true
-      return [] as Row[]
+      globalUnavailable.value = true;
+      return [] as Row[];
     }
   },
   { watch: [() => props.gameId, open], server: false, immediate: false },
-)
+);
 
 const rows = computed<Row[]>(() =>
-  scope.value === 'global' ? (globalData.value ?? []) : localRows.value,
-)
-const modalUi = useThemedModalUi()
-const medal = (i: number) => ['🥇', '🥈', '🥉'][i] ?? `${i + 1}`
+  scope.value === "global" ? (globalData.value ?? []) : localRows.value,
+);
+const modalUi = useThemedModalUi();
+const medal = (i: number) => ["🥇", "🥈", "🥉"][i] ?? `${i + 1}`;
 
 // `labelKey` resolves via $ts in the template so scope labels follow the locale.
 // The two local scopes are labelled "my games" / "my offline games" — calling
 // the first one "All" read as "global + local", which it never was.
 const scopes: { id: Scope; labelKey: string; icon: string }[] = [
-  { id: 'global', labelKey: 'leaderboard.scopeGlobal', icon: 'i-lucide-trophy' },
-  { id: 'all', labelKey: 'leaderboard.scopeMine', icon: 'i-lucide-user' },
-  { id: 'offline', labelKey: 'leaderboard.scopeMineOffline', icon: 'i-lucide-monitor' },
-]
+  { id: "global", labelKey: "leaderboard.scopeGlobal", icon: "i-lucide-trophy" },
+  { id: "all", labelKey: "leaderboard.scopeMine", icon: "i-lucide-user" },
+  { id: "offline", labelKey: "leaderboard.scopeMineOffline", icon: "i-lucide-monitor" },
+];
 </script>
 
 <template>
-  <USlideover v-model:open="open" :title="$ts('leaderboard.title')" side="right" :ui="modalUi">
+  <USlideover
+    v-model:open="open"
+    :title="$ts('leaderboard.title')"
+    side="right"
+    :ui="modalUi"
+  >
     <template #body>
       <div class="space-y-4">
         <UFieldGroup class="w-full flex-wrap">
@@ -72,14 +87,26 @@ const scopes: { id: Scope; labelKey: string; icon: string }[] = [
         </UFieldGroup>
 
         <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ scope === 'global' ? $ts('leaderboard.globalCaption') : $ts('leaderboard.localCaption') }}
+          {{
+            scope === "global"
+              ? $ts("leaderboard.globalCaption")
+              : $ts("leaderboard.localCaption")
+          }}
         </p>
 
-        <p v-if="scope === 'global' && globalUnavailable" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $ts('leaderboard.globalUnavailable') }}
+        <p
+          v-if="scope === 'global' && globalUnavailable"
+          class="text-sm"
+          :style="{ color: 'var(--cg-text-muted)' }"
+        >
+          {{ $ts("leaderboard.globalUnavailable") }}
         </p>
-        <p v-else-if="!rows.length" class="text-sm" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $ts('leaderboard.empty') }}
+        <p
+          v-else-if="!rows.length"
+          class="text-sm"
+          :style="{ color: 'var(--cg-text-muted)' }"
+        >
+          {{ $ts("leaderboard.empty") }}
         </p>
         <ol v-else class="space-y-0.5">
           <li
@@ -90,9 +117,12 @@ const scopes: { id: Scope; labelKey: string; icon: string }[] = [
           >
             <span class="w-7 text-center text-lg">{{ medal(i) }}</span>
             <span class="flex-1 truncate font-medium">{{ row.playerName }}</span>
-            <span class="text-sm whitespace-nowrap" :style="{ color: 'var(--cg-text-muted)' }">
-              {{ $ts('leaderboard.wins', { count: row.wins }) }} ·
-              {{ $ts('leaderboard.played', { count: row.played }) }}
+            <span
+              class="text-sm whitespace-nowrap"
+              :style="{ color: 'var(--cg-text-muted)' }"
+            >
+              {{ $ts("leaderboard.wins", { count: row.wins }) }} ·
+              {{ $ts("leaderboard.played", { count: row.played }) }}
             </span>
           </li>
         </ol>

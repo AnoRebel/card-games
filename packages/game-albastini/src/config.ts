@@ -5,29 +5,29 @@
  * Ace > 7 > King > Jack > Queen > 6 > 5 > 4 > 3. Point values total 120.
  */
 
-import type { Rank } from '@card-games/engine-core'
+import type { Rank } from "@card-games/engine-core";
 
-export type TeamMode = 'individual' | 'teams-of-two' | 'teams-of-three'
+export type TeamMode = "individual" | "teams-of-two" | "teams-of-three";
 
 export interface AlbastiniConfig {
   /** How seats are grouped for scoring. */
-  teamMode: TeamMode
+  teamMode: TeamMode;
   /** Allow opponents to bid (otea) before trump is revealed. */
-  enableBidding: boolean
+  enableBidding: boolean;
   /** Number of hands to play; victory points accumulate across hands. */
-  hands: number
+  hands: number;
 }
 
 export function defaultAlbastiniConfig(): AlbastiniConfig {
   return {
-    teamMode: 'individual',
+    teamMode: "individual",
     enableBidding: true,
     hands: 1,
-  }
+  };
 }
 
 /** Ranks removed from the standard deck for Albastini. */
-export const STRIPPED_RANKS: readonly Rank[] = [2, 8, 9, 10]
+export const STRIPPED_RANKS: readonly Rank[] = [2, 8, 9, 10];
 
 /** Trick-rank strength: higher number beats lower (within a suit). */
 const TRICK_STRENGTH: Record<Rank, number> = {
@@ -45,10 +45,10 @@ const TRICK_STRENGTH: Record<Rank, number> = {
   8: 0,
   9: 0,
   10: 0,
-}
+};
 
 export function trickStrength(rank: Rank): number {
-  return TRICK_STRENGTH[rank]
+  return TRICK_STRENGTH[rank];
 }
 
 /** Point value captured in tricks. */
@@ -66,14 +66,14 @@ const POINT_VALUE: Record<Rank, number> = {
   8: 0,
   9: 0,
   10: 0,
-}
+};
 
 export function pointValue(rank: Rank): number {
-  return POINT_VALUE[rank]
+  return POINT_VALUE[rank];
 }
 
 /** Cards dealt to each player. */
-export const HAND_SIZE = 5
+export const HAND_SIZE = 5;
 
 /** Supported player counts. */
-export const SUPPORTED_COUNTS = [2, 3, 4, 6]
+export const SUPPORTED_COUNTS = [2, 3, 4, 6];

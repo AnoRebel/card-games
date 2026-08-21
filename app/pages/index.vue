@@ -1,50 +1,52 @@
 <script setup lang="ts">
-import { standardDeck, getGame } from '@card-games/engine-core'
+import { standardDeck, getGame } from "@card-games/engine-core";
 
-const { $ts, $localePath } = useI18n()
-useHead({ title: () => $ts('app.title') })
+const { $ts, $localePath } = useI18n();
+useHead({ title: () => $ts("app.title") });
 
 // Daily challenge — a fixed seed of the day + local streak.
-const { today: daily } = useDailyChallenge()
-const dailyGameName = computed(() => getGame(daily.value.gameId)?.meta.name ?? daily.value.gameId)
+const { today: daily } = useDailyChallenge();
+const dailyGameName = computed(
+  () => getGame(daily.value.gameId)?.meta.name ?? daily.value.gameId,
+);
 
 const games = computed(() => [
   {
-    id: 'last-card',
-    name: 'Last Card',
-    tagline: $ts('home.taglineLastCard'),
-    players: '2–6',
-    to: '/play/last-card',
-    font: 'font-last-card',
-    accent: 'oklch(0.72 0.15 25)',
+    id: "last-card",
+    name: "Last Card",
+    tagline: $ts("home.taglineLastCard"),
+    players: "2–6",
+    to: "/play/last-card",
+    font: "font-last-card",
+    accent: "oklch(0.72 0.15 25)",
     sample: [
-      { rank: 7 as const, suit: 'h' as const },
-      { rank: 11 as const, suit: 's' as const },
-      { rank: 2 as const, suit: 'd' as const },
+      { rank: 7 as const, suit: "h" as const },
+      { rank: 11 as const, suit: "s" as const },
+      { rank: 2 as const, suit: "d" as const },
     ],
   },
   {
-    id: 'albastini',
-    name: 'Albastini',
-    tagline: $ts('home.taglineAlbastini'),
-    players: '2·3·4·6',
-    to: '/play/albastini',
-    font: 'font-albastini italic',
-    accent: 'oklch(0.7 0.14 150)',
+    id: "albastini",
+    name: "Albastini",
+    tagline: $ts("home.taglineAlbastini"),
+    players: "2·3·4·6",
+    to: "/play/albastini",
+    font: "font-albastini italic",
+    accent: "oklch(0.7 0.14 150)",
     sample: [
-      { rank: 1 as const, suit: 'c' as const },
-      { rank: 7 as const, suit: 'h' as const },
-      { rank: 13 as const, suit: 's' as const },
+      { rank: 1 as const, suit: "c" as const },
+      { rank: 7 as const, suit: "h" as const },
+      { rank: 13 as const, suit: "s" as const },
     ],
   },
-])
+]);
 
-const root = ref<HTMLElement | null>(null)
+const root = ref<HTMLElement | null>(null);
 onMounted(() => {
-  if (root.value) dealIn(root.value.querySelectorAll('[data-reveal]'))
-})
+  if (root.value) dealIn([...root.value.querySelectorAll("[data-reveal]")]);
+});
 
-void standardDeck
+void standardDeck;
 </script>
 
 <template>
@@ -56,15 +58,18 @@ void standardDeck
         class="text-xs font-semibold uppercase tracking-[0.2em] mb-2"
         :style="{ color: 'var(--cg-accent)' }"
       >
-        {{ $ts('home.badge') }}
+        {{ $ts("home.badge") }}
       </p>
       <h1
         class="font-display text-4xl sm:text-6xl font-extrabold tracking-tight leading-[0.95]"
       >
-        {{ $ts('app.tagline') }}
+        {{ $ts("app.tagline") }}
       </h1>
-      <p class="mt-3 max-w-xl text-sm sm:text-base" :style="{ color: 'var(--cg-text-muted)' }">
-        {{ $ts('app.subtitle') }}
+      <p
+        class="mt-3 max-w-xl text-sm sm:text-base"
+        :style="{ color: 'var(--cg-text-muted)' }"
+      >
+        {{ $ts("app.subtitle") }}
       </p>
     </section>
 
@@ -77,16 +82,23 @@ void standardDeck
       <span class="text-3xl">📅</span>
       <div class="min-w-0 flex-1">
         <p class="font-display font-bold flex items-center gap-2">
-          {{ $ts('daily.title') }}
-          <UBadge v-if="daily.playedToday" color="success" variant="subtle" size="sm">{{ $ts('daily.doneToday') }}</UBadge>
+          {{ $ts("daily.title") }}
+          <UBadge v-if="daily.playedToday" color="success" variant="subtle" size="sm">{{
+            $ts("daily.doneToday")
+          }}</UBadge>
         </p>
         <p class="text-xs" :style="{ color: 'var(--cg-text-muted)' }">
-          {{ $ts('daily.subtitle', { game: dailyGameName }) }}
+          {{ $ts("daily.subtitle", { game: dailyGameName }) }}
         </p>
       </div>
       <div v-if="daily.streak > 0" class="text-right shrink-0">
         <p class="font-display font-bold text-lg leading-none">{{ daily.streak }}🔥</p>
-        <p class="text-[10px] uppercase tracking-wide" :style="{ color: 'var(--cg-text-muted)' }">{{ $ts('daily.streak') }}</p>
+        <p
+          class="text-[10px] uppercase tracking-wide"
+          :style="{ color: 'var(--cg-text-muted)' }"
+        >
+          {{ $ts("daily.streak") }}
+        </p>
       </div>
     </NuxtLink>
 
@@ -117,7 +129,10 @@ void standardDeck
             <h2 :class="['text-2xl font-bold', game.font]">{{ game.name }}</h2>
             <span
               class="text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
-              :style="{ background: 'color-mix(in oklch, var(--cg-accent) 18%, transparent)', color: 'var(--cg-accent)' }"
+              :style="{
+                background: 'color-mix(in oklch, var(--cg-accent) 18%, transparent)',
+                color: 'var(--cg-accent)',
+              }"
             >
               {{ game.players }}
             </span>
@@ -125,17 +140,28 @@ void standardDeck
           <p class="mt-1.5 text-sm min-h-10" :style="{ color: 'var(--cg-text-muted)' }">
             {{ game.tagline }}
           </p>
-          <div class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold cg-accent-text">
-            {{ $ts('common.play') }}
-            <UIcon name="i-lucide-arrow-right" class="transition-transform group-hover:translate-x-1" />
+          <div
+            class="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold cg-accent-text"
+          >
+            {{ $ts("common.play") }}
+            <UIcon
+              name="i-lucide-arrow-right"
+              class="transition-transform group-hover:translate-x-1"
+            />
           </div>
         </div>
       </NuxtLink>
     </section>
 
     <section data-reveal class="flex justify-center pb-4">
-      <UButton :to="$localePath('/rooms')" variant="soft" color="neutral" size="lg" icon="i-lucide-radio">
-        {{ $ts('lobby.browseRooms') }}
+      <UButton
+        :to="$localePath('/rooms')"
+        variant="soft"
+        color="neutral"
+        size="lg"
+        icon="i-lucide-radio"
+      >
+        {{ $ts("lobby.browseRooms") }}
       </UButton>
     </section>
   </div>
