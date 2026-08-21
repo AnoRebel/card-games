@@ -1448,4 +1448,28 @@ describe("Last Card — chain termination", () => {
       }
     }
   }, 30000);
+  it("a polled seat ALWAYS gets both interject and pass moves (UI renders on pass)", () => {
+    // LastCardTable only renders the interjection prompt when a
+    // `pass-interjection` move exists. If the engine ever polled a seat that
+    // could interject but not pass (or vice versa), the player would see an
+    // open chain with no controls and the table would look frozen.
+    const s = table(players, {
+      0: [
+        { rank: 7, suit: "h" },
+        { rank: 9, suit: "c" },
+      ],
+      1: [
+        { rank: 9, suit: "c" },
+        { rank: 9, suit: "s" },
+      ],
+      2: [
+        { rank: 7, suit: "c" },
+        { rank: 9, suit: "d" },
+      ],
+    });
+    const a = step(s, { type: "play", seat: 0, card: { rank: 7, suit: "h" } });
+    const moves = lastCardGame.getLegalMoves(a, a.activeSeat!);
+    expect(moves.some((m) => m.type === "interject")).toBe(true);
+    expect(moves.some((m) => m.type === "pass-interjection")).toBe(true);
+  });
 });
