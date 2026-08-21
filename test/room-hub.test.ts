@@ -440,13 +440,16 @@ describe("RoomHub — turn timer", () => {
     hub.onMessage(a, JSON.stringify({ t: "start", roomId }));
 
     const before = a.last("state")?.state?.version ?? 0;
-    const activeBefore = a.last("state")?.state?.activeSeat;
     // Nobody moves → the active seat's turn times out.
     vi.advanceTimersByTime(10_050);
     const after = a.last("state")?.state?.version ?? 0;
-    // A move was auto-applied (version bumped) and the turn advanced.
+    // A move was auto-applied, which is what the timeout guarantees: the state
+    // advanced. We deliberately do NOT assert the turn passed to the other
+    // seat — the room is dealt from a random seed, and in a 2-player game an
+    // auto-played reverse acts as a skip, so the turn legitimately comes back
+    // to the same seat. Asserting otherwise made this test fail whenever the
+    // deal happened to put an 8 in the timing-out player's hand.
     expect(after).toBeGreaterThan(before);
-    expect(a.last("state")?.state?.activeSeat).not.toBe(activeBefore);
   });
 
   it("does NOT auto-play when no turn limit is configured", () => {
