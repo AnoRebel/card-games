@@ -4,6 +4,9 @@
 .data
 dist
 
+# Builder scratch (Railpack writes this into the build context on deploy)
+railpack-plan.json
+
 # deps
 node_modules
 

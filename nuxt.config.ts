@@ -16,9 +16,21 @@ function resolveVersion(): string {
     /* keep default */
   }
   const sha = process.env.GIT_SHA?.slice(0, 7) || tryGit("git rev-parse --short HEAD");
-  const dirty = process.env.GIT_SHA
-    ? ""
-    : tryGit("git status --porcelain")
+
+  // `-dirty` means "built from uncommitted local edits", which is only ever
+  // meaningful for a developer's working tree. A deploy checks out a commit, so
+  // it is pristine by construction — yet production stamped `-dirty` on every
+  // build: the builder writes its own scratch files (Railpack drops a
+  // `railpack-plan.json` into the build context) which are untracked, so
+  // `git status --porcelain` reported `?? railpack-plan.json`.
+  //
+  // Fix both halves: ignore untracked files when judging dirtiness (they are
+  // never "uncommitted edits" to the source we built from), and skip the check
+  // entirely for automated builds. A false `-dirty` is worse than none — it
+  // makes the marker unable to flag the case it exists for.
+  const isAutomatedBuild = Boolean(process.env.GIT_SHA || process.env.CI);
+  const dirty =
+    !isAutomatedBuild && tryGit("git status --porcelain --untracked-files=no")
       ? "-dirty"
       : "";
   return sha ? `${pkgVersion}+${sha}${dirty}` : pkgVersion;
