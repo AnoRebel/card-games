@@ -84,7 +84,7 @@ function onActivate() {
     :class="[
       selectable && !disabled ? 'cursor-pointer' : '',
       selected ? 'cg-card--selected' : '',
-      disabled ? 'opacity-50 grayscale' : '',
+      disabled ? 'cg-card--disabled' : '',
       reduced === 'reduce' ? 'cg-card--no-motion' : '',
     ]"
     :style="{ width: `${width}px`, height: `${height}px` }"
@@ -161,5 +161,26 @@ function onActivate() {
 }
 .cg-card--no-motion {
   transition: none;
+}
+
+/* An unplayable card.
+ *
+ * This used to be `opacity-50 grayscale`, which reads clearly on a light page
+ * but almost vanishes as a signal in dark mode: a white card at 50% opacity over
+ * the dark felt is still a bright white card, and `grayscale` does nothing to a
+ * face that is already black and white. Players reported cards "looking
+ * playable" when they were not.
+ *
+ * Darken the card itself (brightness/contrast) rather than fading it toward the
+ * background, so the cue survives on any backdrop, and desaturate the pips so a
+ * red suit stops drawing the eye. Hover-lift is suppressed too — a card that
+ * cannot be played should not feel interactive.
+ */
+.cg-card--disabled {
+  filter: grayscale(0.85) brightness(0.62) contrast(0.9);
+  opacity: 0.85;
+}
+.cg-card--disabled:hover {
+  transform: none;
 }
 </style>

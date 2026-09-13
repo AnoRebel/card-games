@@ -10,6 +10,7 @@ import {
   type Card,
   type Suit,
 } from "@card-games/engine-core";
+import { canPlay } from "@card-games/game-last-card";
 import type { LastCardMove, LastCardState } from "@card-games/game-last-card";
 import type { GameTransport } from "~/transports/types";
 
@@ -37,6 +38,21 @@ const modalUi = useThemedModalUi();
 const playableIds = computed(() => {
   const ids = new Set<string>();
   for (const m of legalMoves.value) if (m.type === "play") ids.add(cardId(m.card));
+  return ids;
+});
+/**
+ * Which of MY cards match the table right now, regardless of whose turn it is.
+ *
+ * `playableIds` comes from `legalMoves`, which is empty off-turn — using it to
+ * drive the dim would grey out the whole hand while waiting. `canPlay` is a pure
+ * suit/rank check against the current state, so the hand stays honest between
+ * turns instead of only lighting up the moment you're asked to act.
+ */
+const matchingIds = computed(() => {
+  const ids = new Set<string>();
+  const s = lc.value;
+  if (!s.discardPile?.length) return ids;
+  for (const c of myHand.value) if (canPlay(s, c)) ids.add(cardId(c));
   return ids;
 });
 const opponents = computed(() =>
@@ -677,6 +693,7 @@ async function draw() {
       ref="handRef"
       :cards="myHand"
       :playable-ids="pendingChain ? interjectableIds : playableIds"
+      :matching-ids="pendingChain ? interjectableIds : matchingIds"
       :enabled="isMyTurn"
       :width="100"
       @play="pendingChain ? interject($event) : playCardMove($event)"

@@ -12,10 +12,15 @@ const props = withDefaults(
   defineProps<{
     cards: Card[];
     playableIds?: Set<string>;
+    /**
+     * Cards that legally match the table, independent of whose turn it is. Used
+     * for the dim only; omit to fall back to `playableIds`.
+     */
+    matchingIds?: Set<string>;
     enabled?: boolean;
     width?: number;
   }>(),
-  { playableIds: undefined, enabled: false, width: 84 },
+  { playableIds: undefined, matchingIds: undefined, enabled: false, width: 84 },
 );
 const emit = defineEmits<{ play: [card: Card] }>();
 
@@ -50,6 +55,26 @@ watch(
 
 const isPlayable = (c: Card) =>
   props.enabled && (props.playableIds === undefined || props.playableIds.has(cardId(c)));
+
+/**
+ * Is `c` a legal play IGNORING whose turn it is?
+ *
+ * Dimming used to be gated on `enabled`, so off-turn NOTHING was dimmed and the
+ * hand changed appearance the instant your turn began. That made unplayable
+ * cards look playable while you waited — most confusingly right after a Jack, an
+ * 8 or a multi-card play, which are exactly the moments the suit demand shifts.
+ * Keeping the dim stable across turns means the hand always reads honestly.
+ *
+ * When no `playableIds` set is supplied the caller isn't tracking legality, so
+ * nothing is dimmed.
+ */
+const isLegal = (c: Card) => {
+  // Only a caller that supplies `matchingIds` has turn-independent legality; for
+  // everyone else fall back to the old behaviour (dim on your turn only), since
+  // their `playableIds` is empty off-turn and would grey out the whole hand.
+  if (props.matchingIds !== undefined) return props.matchingIds.has(cardId(c));
+  return isPlayable(c) || !props.enabled;
+};
 
 // Overlap step so the hand always fits.
 const step = computed(() => {
@@ -153,7 +178,7 @@ defineExpose({ cardEl, rootEl });
           :card="card"
           :width="width"
           :selectable="isPlayable(card)"
-          :disabled="enabled && !isPlayable(card)"
+          :disabled="!isLegal(card)"
           :action-label="isPlayable(card) ? `Play ${cardName(card)}` : null"
           @select="onTap(card)"
         />
